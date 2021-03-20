@@ -37,13 +37,16 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
     if (!swagger.paths[v.path]) swagger.paths[v.path] = {};
     swagger.paths[v.path][v.method] = {
       tags: ['No named'],
+      ...v.data,
       responses: {
         200: {
-          description: 'Success',
+          description: 'OK',
           content: 'application/json',
-          schema: {
-            $ref: '#/definitions/회원가입_요청문',
-          },
+          schema: v.data?.resultKey
+            ? {
+                $ref: '#/definitions/' + v.data?.resultKey,
+              }
+            : undefined,
         },
         400: {
           description: 'Bad Request',
@@ -61,7 +64,6 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
           description: 'Not Found',
         },
       },
-      ...v.data,
     };
   });
 

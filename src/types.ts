@@ -20,6 +20,7 @@ export interface PageData {
     operationId?: string;
     consumes?: string[];
     parameters: any;
+    resultKey?: string;
   };
 }
 

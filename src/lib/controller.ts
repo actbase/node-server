@@ -10,8 +10,8 @@ import {
 } from '../types';
 import express, { NextFunction } from 'express';
 import passport from 'passport';
-import { pick } from 'lodash';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
+import { pick } from 'lodash';
 
 // @ts-ignore
 
@@ -51,13 +51,20 @@ export const createController = (
   });
 };
 
-const fixParam = (args: any, source: any) => {
-  if (!source || !args) return source;
+const fixParam = (
+  _args: DTOObject | DTOObject[] | RequestParamObject | RequestParamObject[] | undefined,
+  source: any,
+) => {
+  if (!source || !_args) return source;
+
+  const item: DTOObject | RequestParamObject = Array.isArray(_args) ? _args?.[0] : _args;
+  const args: RequestParamObject = <RequestParamObject>(item.__dto_name ? <RequestParamObject>item.properties : item);
   const items = pick(source, Object.keys(args));
+
   return Object.keys(items).reduce((p: { [key: string]: any }, v) => {
     if (items[v] === undefined || items[v] === null) {
       p[v] = undefined;
-    } else if (args[v].type === 'number') {
+    } else if (args?.[v].type === 'number') {
       p[v] = parseInt(String(items[v]).replace(/[^0-9\.]+/, ''), 10);
     } else {
       p[v] = items[v];
@@ -145,6 +152,17 @@ export const requestMapping: AsyncFunction<
     const queryObject = defineObject(request.params?.query, { in: 'query' });
     if (queryObject) parameters.push(...queryObject);
 
+    let resultKey = '';
+    if (request.outputDto) {
+      resultKey = request.outputDto?.__dto_name;
+      if (resultKey) {
+        definitions[resultKey] = {
+          type: 'object',
+          properties: request.outputDto?.properties,
+        };
+      }
+    }
+
     if (Object.keys(request.params?.form || {}).length > 0) {
       consumes[0] = 'multipart/form-data';
 
@@ -208,6 +226,7 @@ export const requestMapping: AsyncFunction<
         operationId: request.method + ':' + request.uri,
         consumes,
         parameters,
+        resultKey,
       },
     });
 

@@ -1,5 +1,5 @@
 import { DatabaseOption } from '../types';
-import { Sequelize } from 'sequelize';
+import { DataTypes, Sequelize } from 'sequelize';
 import { Options } from 'sequelize/types/lib/sequelize';
 import { Model, ModelAttributes, ModelOptions } from 'sequelize/types/lib/model';
 
@@ -15,13 +15,49 @@ const config: ConfigSpec = {
   associates: [],
 };
 
+interface ModelExtraOptions extends ModelOptions {
+  with?: string[];
+}
+
 export const createModel = (
   name: string,
   column: ModelAttributes,
-  options?: ModelOptions,
+  options?: ModelExtraOptions,
   associate?: () => void,
 ): Model | undefined => {
-  const domain = config.container?.define(name, column, {
+  const _column = {
+    ...column,
+  };
+
+  if (options?.with?.includes('*') || options?.with?.includes('id')) {
+    _column.id = {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+      comment: '고유키',
+    };
+  }
+
+  if (options?.with?.includes('*') || options?.with?.includes('created_at')) {
+    _column.created_at = {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      comment: '등록일',
+    };
+  }
+
+  if (options?.with?.includes('*') || options?.with?.includes('updated_at')) {
+    _column.updated_at = {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      comment: '수정일',
+    };
+  }
+
+  const domain = config.container?.define(name, _column, {
     timestamps: false,
     charset: 'utf8mb4',
     collate: 'utf8mb4_general_ci',
@@ -59,4 +95,8 @@ export const dbAssociate = () => {
     // @ts-ignore
     return v.associate(v.domain);
   });
+};
+
+export const getSequelize = () => {
+  return config.container;
 };
