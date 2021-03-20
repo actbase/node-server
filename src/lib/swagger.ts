@@ -36,22 +36,32 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
 
     if (!swagger.paths[v.path]) swagger.paths[v.path] = {};
     swagger.paths[v.path][v.method] = {
-      ...v.data,
-      tags: v.data.tags || [],
+      tags: ['No named'],
       responses: {
         200: {
           description: 'Success',
+          content: 'application/json',
+          schema: {
+            $ref: '#/definitions/회원가입_요청문',
+          },
         },
         400: {
-          description: 'Parameter Error',
+          description: 'Bad Request',
+          content: 'application/json',
         },
         401: {
-          description: 'Authorized Error',
+          description: 'Unauthorized',
+          content: 'application/json',
+        },
+        403: {
+          description: 'Forbidden',
+          content: 'application/json',
         },
         404: {
-          description: 'Not found data',
+          description: 'Not Found',
         },
       },
+      ...v.data,
     };
   });
 

@@ -1,8 +1,16 @@
-import { AsyncFunction, AsyncFunctions, AuthOption, ControllerOption, ControllerRequest, PageData } from '../types';
+import {
+  AsyncFunction,
+  AsyncFunctions,
+  AuthOption,
+  ControllerOption,
+  ControllerRequest,
+  DTOObject,
+  PageData,
+  RequestParamObject,
+} from '../types';
 import express, { NextFunction } from 'express';
 import passport from 'passport';
 import { pick } from 'lodash';
-import md5 from 'crypto-js/md5';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 
 // @ts-ignore
@@ -27,7 +35,12 @@ const config: ConfigSpec = {
 
 export const createController = (
   request: ControllerRequest,
-  execute: AsyncFunction<any, any> | AsyncFunctions<[any, any, any, any], any>,
+  execute:
+    | AsyncFunction<
+        { path?: { [key: string]: any }; body?: { [key: string]: any }; form?: { [key: string]: any }; user?: AppUser },
+        any
+      >
+    | AsyncFunctions<[express.Request, express.Response, NextFunction, any], any>,
   options: ControllerOption,
 ) => {
   config.pages.push({
@@ -95,6 +108,27 @@ export const requestMapping: AsyncFunction<
   const pages: PageData[] = [];
   const definitions: { [key: string]: any } = {};
 
+  const defineObject = (
+    params: DTOObject | RequestParamObject | undefined,
+    extra: { in: string; required?: boolean },
+  ): any => {
+    if (params?.__dto_name) {
+      const _params = <RequestParamObject>params.properties;
+      return Object.keys(_params || {}).map(name => ({
+        name,
+        ...extra,
+        ..._params[name],
+      }));
+    } else {
+      const _params = <RequestParamObject>params;
+      return Object.keys(_params || {}).map(name => ({
+        name,
+        ...extra,
+        ..._params[name],
+      }));
+    }
+  };
+
   config.pages.sort((a, b) => (a.size > b.size ? 1 : a.size < b.size ? -1 : 0));
   for (const page of config.pages) {
     const { execute, options, request } = page;
@@ -105,66 +139,48 @@ export const requestMapping: AsyncFunction<
     const parameters = [];
     let consumes = ['application/json'];
 
-    Object.keys(request.params?.path || {}).forEach(key => {
-      parameters.push({
-        name: key,
-        in: 'path',
-        required: true,
-        ...request.params?.path?.[key],
-      });
-    });
+    const pathObject = defineObject(request.params?.path, { in: 'path', required: true });
+    if (pathObject) parameters.push(...pathObject);
 
-    Object.keys(request.params?.query || {}).forEach(key => {
-      parameters.push({
-        name: key,
-        in: 'query',
-        ...request.params?.path?.[key],
-        ...request.params?.query?.[key],
-      });
-    });
+    const queryObject = defineObject(request.params?.query, { in: 'query' });
+    if (queryObject) parameters.push(...queryObject);
 
     if (Object.keys(request.params?.form || {}).length > 0) {
       consumes[0] = 'multipart/form-data';
-      Object.keys(request.params?.form || {}).forEach(key => {
-        parameters.push({
-          name: key,
-          in: 'formData',
-          ...request.params?.form?.[key],
-        });
-      });
-    } else if (Array.isArray(request.params?.body) && (request.params?.body?.length || 0) > 0) {
-      const key = md5(JSON.stringify(request.params?.body)).toString();
-      definitions[key] = {
-        type: 'array',
-        items: {
+
+      const formObject = defineObject(request.params?.form, { in: 'formData' });
+      if (formObject) parameters.push(...formObject);
+    } else if (request.params?.body && Object.keys(request.params?.body)?.length) {
+      const is_array = Array.isArray(request.params?.body);
+      const obj_field = is_array ? (<object[]>request.params?.body)?.[0] : request.params?.body;
+
+      let definition_key = String((<DTOObject>obj_field)?.__dto_name) || '';
+      if (definition_key) {
+        definitions[definition_key] = {
           type: 'object',
-          properties: request.params?.body[0],
-        },
-      };
+          properties: (<DTOObject>obj_field)?.properties,
+        };
+      } else {
+        definition_key = `미지정 (${Object.keys(definitions).length})`;
+        definitions[definition_key] = is_array
+          ? {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: obj_field,
+              },
+            }
+          : {
+              type: 'object',
+              properties: obj_field,
+            };
+      }
 
       parameters.push({
         name: 'body',
         in: 'body',
         schema: {
-          $ref: '#/definitions/' + key,
-        },
-        // items: {
-        //   type: 'object',
-        //   // properties: params.body,
-        // },
-      });
-    } else if (Object.keys(request.params?.body || {}).length > 0) {
-      const key = md5(JSON.stringify(request.params?.body)).toString();
-      definitions[key] = {
-        type: 'object',
-        properties: request.params?.body,
-      };
-
-      parameters.push({
-        name: 'body',
-        in: 'body',
-        schema: {
-          $ref: '#/definitions/' + key,
+          $ref: '#/definitions/' + definition_key,
         },
       });
     }

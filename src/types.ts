@@ -2,6 +2,13 @@
 export type AsyncFunctions<A, O> = (...args: A) => Promise<O>;
 export type AsyncFunction<A, O> = (args: A) => Promise<O>;
 
+export interface DTOObject {
+  __dto_name: string;
+  properties: RequestParamObject;
+  map: (o: any) => any;
+  collect: (o: any[]) => any[];
+}
+
 export interface PageData {
   path: string;
   method: string;
@@ -53,24 +60,21 @@ export interface RequestParam {
   enum?: string[];
 }
 
+export interface RequestParamObject {
+  [key: string]: RequestParam;
+}
+
 export interface ControllerRequest {
   uri: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   roles?: string[];
   params?: {
-    path?: {
-      [key: string]: RequestParam;
-    };
-    body?: {
-      [key: string]: RequestParam;
-    };
-    query?: {
-      [key: string]: RequestParam;
-    };
-    form?: {
-      [key: string]: RequestParam;
-    };
+    path?: DTOObject | RequestParamObject;
+    body?: DTOObject | DTOObject[] | RequestParamObject | RequestParamObject[];
+    query?: DTOObject | RequestParamObject;
+    form?: DTOObject | RequestParamObject;
   };
+  outputDto?: DTOObject;
 }
 
 export interface ControllerOption {
