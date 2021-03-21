@@ -74,7 +74,8 @@ export const createModel = (
   return domain;
 };
 
-export const dbInit = (options: DatabaseOption) => {
+export const dbInit = (options?: DatabaseOption) => {
+  if (!options) return undefined;
   const args: Options = {
     host: options.host,
     dialect: options.dialect,
@@ -91,6 +92,7 @@ export const dbInit = (options: DatabaseOption) => {
 };
 
 export const dbAssociate = () => {
+  if (!config.container) return;
   config.associates?.forEach(v => {
     // @ts-ignore
     return v.associate(v.domain);

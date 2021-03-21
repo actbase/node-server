@@ -260,7 +260,6 @@ export const requestMapping: AsyncFunction<
       try {
         const fn = passport.authenticate('jwt', { session: false }, async (err, user) => {
           req.user = undefined;
-          console.log('assing user', user);
           if (!err) req.user = user || undefined;
           next();
         });
@@ -291,8 +290,6 @@ export const requestMapping: AsyncFunction<
             path: fixParam(request.params?.path, req.params),
             user: user,
           };
-
-          console.log('Req-user', req.user);
 
           const params = args.params;
           if (request.roles && request.roles.length > 0 && !request.roles.includes('any')) {
