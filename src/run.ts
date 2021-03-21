@@ -53,7 +53,7 @@ export const run = (dirname: string, options: ServerOption) => {
     app.use('/sync', async (req, res) => {
       const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
       if (['::1', 'localhost', '127.0.0.1', '::ffff:127.0.0.1'].includes(<string>ip)) {
-        await dbContainer.sync({ alter: true });
+        await dbContainer.sync({ alter: { drop: false } });
 
         res.type('text/plain');
         res.status(200);

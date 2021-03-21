@@ -55,7 +55,7 @@ export interface DatabaseOption {
 }
 
 export interface RequestParam {
-  type: 'string' | 'number';
+  type: 'string' | 'number' | 'array' | 'object';
   description?: string;
   example?: string;
   enum?: string[];

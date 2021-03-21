@@ -73,6 +73,7 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
     swaggerUi.setup(undefined, {
       swaggerOptions: {
         url: `${options.scheme}://${options.host}/api-docs`,
+        docExpansion: 'none',
       },
     }),
   );
