@@ -1,7 +1,7 @@
 import { DatabaseOption } from '../types';
 import { DataTypes, Sequelize } from 'sequelize';
 import { Options } from 'sequelize/types/lib/sequelize';
-import { Model, ModelAttributes, ModelOptions } from 'sequelize/types/lib/model';
+import { Model, ModelAttributes, ModelCtor, ModelOptions } from 'sequelize/types/lib/model';
 
 interface ConfigSpec {
   container?: Sequelize;
@@ -19,12 +19,13 @@ interface ModelExtraOptions extends ModelOptions {
   with?: string[];
 }
 
-export const createModel = (
+// @ts-ignore
+export const createModel = function <T extends Model>(
   name: string,
-  column: ModelAttributes,
+  column: ModelAttributes<T>,
   options?: ModelExtraOptions,
   associate?: () => void,
-): Model | undefined => {
+): ModelCtor<T> {
   const _column = {
     ...column,
   };
@@ -70,6 +71,7 @@ export const createModel = (
       associate,
     });
   }
+
   // @ts-ignore
   return domain;
 };

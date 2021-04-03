@@ -75,21 +75,27 @@ const fixParam = (
   }, {});
 };
 
-export const getJwtToken = async (req: express.Request, res: express.Response, user: object) => {
-  req.login(user, { session: false }, err => {
-    if (err) {
-      res.send(err);
-    }
-    // const expires_in = parseInt(CONFIG.jwt_expiration);
-    //, { expiresIn: expires_in }
-    const access_token = jwt.sign(user, config.auth?.jwt_secret || 'defkey');
-    const refresh_token = jwt.sign({ ...req.body }, config.auth?.jwt_secret || 'defkey');
+export const getJwtToken = async (req: express.Request, user: object, refreshPayload: object) => {
+  return new Promise((resolve, reject) => {
+    req.login(user, { session: false }, err => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const expires_in = config.auth?.jwt_expiration || -1;
+      const options = {
+        expiresIn: (expires_in || 0) > 0 ? expires_in : '30d',
+      };
 
-    return res.json({
-      access_token,
-      // expires_in,
-      refresh_token,
-      token_type: 'bearer',
+      const access_token = jwt.sign(user, config.auth?.jwt_secret || 'defkey', options);
+      const refresh_token = jwt.sign(refreshPayload, config.auth?.jwt_secret || 'defkey');
+
+      resolve({
+        access_token,
+        expires_in,
+        refresh_token,
+        token_type: 'bearer',
+      });
     });
   });
 };
@@ -226,12 +232,17 @@ export const requestMapping: AsyncFunction<
       });
     }
 
-    let security: { user_auth: string[] }[] = [];
+    let security: { user_auth_key?: string[]; user_auth_login?: string[] }[] = [];
     if (request.roles && request.roles.length > 0) {
       request.roles = request.roles.map(v => v?.toLowerCase?.());
       security = [
         {
-          user_auth: request.roles?.map(v => {
+          user_auth_login: request.roles?.map(v => {
+            return v?.indexOf(':') > 0 ? v.substring(0, v.indexOf(':')).toLowerCase() : v.toLowerCase();
+          }),
+        },
+        {
+          user_auth_key: request.roles?.map(v => {
             return v?.indexOf(':') > 0 ? v.substring(0, v.indexOf(':')).toLowerCase() : v.toLowerCase();
           }),
         },
@@ -320,7 +331,6 @@ export const requestMapping: AsyncFunction<
           }
 
           if (execute.length >= 3) {
-            console.log(execute);
             return await execute(req, res, next, { params });
           } else {
             // @ts-ignore
@@ -346,7 +356,6 @@ export const requestMapping: AsyncFunction<
     };
 
     if (method === 'post') {
-      console.log(route_uri);
       router.post(route_uri, handlePrepare, handleExecute);
     } else if (method === 'put') {
       router.put(route_uri, handlePrepare, handleExecute);

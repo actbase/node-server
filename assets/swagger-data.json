@@ -11,10 +11,15 @@
   "schemes": ["https", "http"],
   "paths": {},
   "securityDefinitions": {
-    "user_auth": {
+    "user_auth_login": {
       "type": "oauth2",
       "tokenUrl": "/v1/auth/login",
       "flow": "password"
+    },
+    "user_auth_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Authorization"
     }
   },
   "definitions": {}
