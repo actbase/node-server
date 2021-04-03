@@ -79,6 +79,7 @@ export interface ControllerRequest {
   };
   requestBody?: {
     type?: 'formdata' | 'json';
+    isArray?: boolean;
     properties?: RequestParamObject;
   };
   outputDto?: DTOObject;

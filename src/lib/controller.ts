@@ -208,6 +208,29 @@ export const requestMapping: AsyncFunction<
 
     if (request.requestBody) {
       if (request.requestBody.type === 'formdata') {
+        consumes[0] = 'multipart/form-data';
+        if (request.requestBody.isArray) {
+          // @ts-ignore
+          requestBody.content['multipart/form-data'] = {
+            schema: {
+              type: 'array',
+              items: {
+                type: 'object',
+                // @ts-ignore
+                properties: parseArgs(request.requestBody.properties, 'swagger'),
+              },
+            },
+          };
+        } else {
+          // @ts-ignore
+          requestBody.content['multipart/form-data'] = {
+            schema: {
+              type: 'object',
+              // @ts-ignore
+              properties: parseArgs(request.requestBody.properties, 'swagger'),
+            },
+          };
+        }
       } else if (request.requestBody.type === 'json') {
         // @ts-ignore
         requestBody.content['application/json'] = {
