@@ -174,6 +174,7 @@ export const requestMapping: AsyncFunction<
 
     const parameters = [];
     let consumes = ['application/json'];
+    let requestBody = undefined;
 
     const pathObject = defineObject(request.params?.path, { in: 'path', required: true });
     if (pathObject) parameters.push(...pathObject);
@@ -194,21 +195,20 @@ export const requestMapping: AsyncFunction<
 
     if (Object.keys(request.params?.form || {}).length > 0) {
       consumes[0] = 'multipart/form-data';
-
       const formObject = defineObject(request.params?.form, { in: 'formData' });
       if (formObject) parameters.push(...formObject);
     } else if (request.params?.body && Object.keys(request.params?.body)?.length) {
       const is_array = Array.isArray(request.params?.body);
       const obj_field = is_array ? (<object[]>request.params?.body)?.[0] : request.params?.body;
 
-      let definition_key = String((<DTOObject>obj_field)?.__dto_name) || '';
+      let definition_key = String((<DTOObject>obj_field)?.__dto_name || '');
       if (definition_key) {
         definitions[definition_key] = {
           type: 'object',
           properties: (<DTOObject>obj_field)?.properties,
         };
       } else {
-        definition_key = `미지정 (${Object.keys(definitions).length})`;
+        definition_key = `UNDEFINED_${Object.keys(definitions).length}`;
         definitions[definition_key] = is_array
           ? {
               type: 'array',
@@ -223,16 +223,28 @@ export const requestMapping: AsyncFunction<
             };
       }
 
-      parameters.push({
-        name: 'body',
-        in: 'body',
-        schema: {
-          $ref: '#/definitions/' + definition_key,
+      // parameters.push({
+      //   name: 'body',
+      //   in: 'body',
+      //   type: 'object',
+      //   properties: request.params?.body,
+      //   // schema: {
+
+      //   // },
+      // });
+
+      requestBody = {
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/' + definition_key,
+            },
+          },
         },
-      });
+      };
     }
 
-    let security: { user_auth_key?: string[]; user_auth_login?: string[] }[] = [];
+    let security: { bearerAuth?: string[]; user_auth_login?: string[] }[] = [];
     if (request.roles && request.roles.length > 0) {
       request.roles = request.roles.map(v => v?.toLowerCase?.());
       security = [
@@ -242,9 +254,7 @@ export const requestMapping: AsyncFunction<
           }),
         },
         {
-          user_auth_key: request.roles?.map(v => {
-            return v?.indexOf(':') > 0 ? v.substring(0, v.indexOf(':')).toLowerCase() : v.toLowerCase();
-          }),
+          bearerAuth: [],
         },
       ];
     }
@@ -261,6 +271,7 @@ export const requestMapping: AsyncFunction<
         consumes,
         parameters,
         resultKey,
+        requestBody,
       },
     });
 
@@ -366,14 +377,14 @@ export const requestMapping: AsyncFunction<
     } else {
       router.all(route_uri, handlePrepare, handleExecute);
     }
-
-    //커스텀 404 페이지
-    // router.use((_req, res) => {
-    //   res.type('text/plain');
-    //   res.status(404);
-    //   res.send('404 - Not Found');
-    // });
   }
+
+  // 커스텀 404 페이지
+  router.use((_req, res) => {
+    res.type('text/plain');
+    res.status(404);
+    res.send('404 - Not Found');
+  });
 
   return { router, pages, definitions };
 };

@@ -1,14 +1,17 @@
 import swaggerUi from 'swagger-ui-express';
+// @ts-ignore
 import { PageData, SwaggerOption } from '../types';
 import express from 'express';
 
 // eslint-disable-next-line no-undef
 const swagger = require('../../assets/swagger-data.json');
 
+// @ts-ignore
 const methods = ['get', 'post', 'put', 'delete'];
 // @ts-ignore
 const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitions }) => {
-  swagger.definitions = definitions;
+  swagger.components.schemas = definitions;
+
   swagger.info.title = options.name;
   swagger.info.version = options.version;
   swagger.info.description = options.description;
@@ -41,24 +44,24 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
       responses: {
         200: {
           description: 'OK',
-          content: 'application/json',
-          schema: v.data?.resultKey
-            ? {
-                $ref: '#/definitions/' + v.data?.resultKey,
-              }
-            : undefined,
+          content: {
+            'application/json': {
+              schema: v.data?.resultKey
+                ? {
+                    $ref: '#/components/schemas/' + v.data?.resultKey,
+                  }
+                : undefined,
+            },
+          },
         },
         400: {
           description: 'Bad Request',
-          content: 'application/json',
         },
         401: {
           description: 'Unauthorized',
-          content: 'application/json',
         },
         403: {
           description: 'Forbidden',
-          content: 'application/json',
         },
         404: {
           description: 'Not Found',
@@ -78,9 +81,13 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
     }),
   );
 
+  // @ts-ignore
   app.use('/api-docs', (req: express.Request, res: express.Response) => {
-    swagger.host = options.host || req.headers.host;
-    swagger.schemes = [options.scheme];
+    swagger.servers = [
+      {
+        url: `${options.scheme}://${options.host || req.headers.host}/v1`,
+      },
+    ];
     return res.status(200).json(swagger);
   });
 };

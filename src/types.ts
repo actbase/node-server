@@ -21,6 +21,7 @@ export interface PageData {
     consumes?: string[];
     parameters: any;
     resultKey?: string;
+    requestBody?: any;
   };
 }
 
