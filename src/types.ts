@@ -1,4 +1,7 @@
 // @ts-ignore
+import { DataTypeOf } from './contants/DataType';
+
+// @ts-ignore
 export type AsyncFunctions<A, O> = (...args: A) => Promise<O>;
 export type AsyncFunction<A, O> = (args: A) => Promise<O>;
 
@@ -56,7 +59,7 @@ export interface DatabaseOption {
 }
 
 export interface RequestParam {
-  type: 'string' | 'number' | 'array' | 'object';
+  type: 'string' | 'number' | 'array' | 'object' | DataTypeOf;
   description?: string;
   example?: string;
   enum?: string[];
@@ -72,9 +75,11 @@ export interface ControllerRequest {
   roles?: string[];
   params?: {
     path?: DTOObject | RequestParamObject;
-    body?: DTOObject | DTOObject[] | RequestParamObject | RequestParamObject[];
     query?: DTOObject | RequestParamObject;
-    form?: DTOObject | RequestParamObject;
+  };
+  requestBody?: {
+    type?: 'formdata' | 'json';
+    properties?: RequestParamObject;
   };
   outputDto?: DTOObject;
 }

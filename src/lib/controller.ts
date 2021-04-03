@@ -38,10 +38,7 @@ const config: ConfigSpec = {
 export const createController = (
   request: ControllerRequest,
   execute:
-    | AsyncFunction<
-        { path?: { [key: string]: any }; body?: { [key: string]: any }; form?: { [key: string]: any }; user?: AppUser },
-        any
-      >
+    | AsyncFunction<{ path?: { [key: string]: any }; body?: { [key: string]: any }; user?: AppUser }, any>
     | AsyncFunctions<[express.Request, express.Response, NextFunction, any], any>,
   options: ControllerOption,
 ) => {
@@ -98,6 +95,22 @@ export const getJwtToken = async (req: express.Request, user: object, refreshPay
       });
     });
   });
+};
+
+export const parseArgs = function(object: { [key: string]: any }, args: string) {
+  const output: { [key: string]: any } = {};
+  Object.keys(object).forEach((key: string) => {
+    let extraData = {};
+    if (object[key].type[args]) {
+      extraData = object[key].type[args];
+    }
+    output[key] = {
+      ...object[key],
+      ...extraData,
+    };
+  }, {});
+
+  return output;
 };
 
 export const requestMapping: AsyncFunction<
@@ -174,7 +187,7 @@ export const requestMapping: AsyncFunction<
 
     const parameters = [];
     let consumes = ['application/json'];
-    let requestBody = undefined;
+    const requestBody = { content: {} };
 
     const pathObject = defineObject(request.params?.path, { in: 'path', required: true });
     if (pathObject) parameters.push(...pathObject);
@@ -193,56 +206,72 @@ export const requestMapping: AsyncFunction<
       }
     }
 
-    if (Object.keys(request.params?.form || {}).length > 0) {
-      consumes[0] = 'multipart/form-data';
-      const formObject = defineObject(request.params?.form, { in: 'formData' });
-      if (formObject) parameters.push(...formObject);
-    } else if (request.params?.body && Object.keys(request.params?.body)?.length) {
-      const is_array = Array.isArray(request.params?.body);
-      const obj_field = is_array ? (<object[]>request.params?.body)?.[0] : request.params?.body;
-
-      let definition_key = String((<DTOObject>obj_field)?.__dto_name || '');
-      if (definition_key) {
-        definitions[definition_key] = {
-          type: 'object',
-          properties: (<DTOObject>obj_field)?.properties,
-        };
-      } else {
-        definition_key = `UNDEFINED_${Object.keys(definitions).length}`;
-        definitions[definition_key] = is_array
-          ? {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: obj_field,
-              },
-            }
-          : {
-              type: 'object',
-              properties: obj_field,
-            };
-      }
-
-      // parameters.push({
-      //   name: 'body',
-      //   in: 'body',
-      //   type: 'object',
-      //   properties: request.params?.body,
-      //   // schema: {
-
-      //   // },
-      // });
-
-      requestBody = {
-        content: {
-          'application/json': {
-            schema: {
-              $ref: '#/components/schemas/' + definition_key,
-            },
+    if (request.requestBody) {
+      if (request.requestBody.type === 'formdata') {
+      } else if (request.requestBody.type === 'json') {
+        // @ts-ignore
+        requestBody.content['application/json'] = {
+          schema: {
+            type: 'object',
+            // @ts-ignore
+            properties: parseArgs(request.requestBody.properties, 'swagger'),
           },
-        },
-      };
+        };
+      }
     }
+
+    // if (Object.keys(request.params?.form || {}).length > 0) {
+    //   consumes[0] = 'multipart/form-data';
+    //   const formObject = defineObject(request.params?.form, { in: 'formData' });
+    //   if (formObject) parameters.push(...formObject);
+    // } else if (request.params?.body && Object.keys(request.params?.body)?.length) {
+    //   const is_array = Array.isArray(request.params?.body);
+    //   const obj_field = is_array ? (<object[]>request.params?.body)?.[0] : request.params?.body;
+    //
+    //   let definition_key = String((<DTOObject>obj_field)?.__dto_name || '');
+    //   if (definition_key) {
+    //     definitions[definition_key] = {
+    //       type: 'object',
+    //       properties: (<DTOObject>obj_field)?.properties,
+    //     };
+    //   } else {
+    //     definition_key = `UNDEFINED_${Object.keys(definitions).length}`;
+    //     definitions[definition_key] = is_array
+    //       ? {
+    //           type: 'array',
+    //           items: {
+    //             type: 'object',
+    //             properties: obj_field,
+    //           },
+    //         }
+    //       : {
+    //           type: 'object',
+    //           properties: obj_field,
+    //         };
+    //   }
+    //
+    //   // parameters.push({
+    //   //   name: 'body',
+    //   //   in: 'body',
+    //   //   type: 'object',
+    //   //   properties: request.params?.body,
+    //   //   // schema: {
+    //
+    //   //   // },
+    //   // });
+    //
+    //   requestBody = {
+    //     content: {
+    //       'application/json': {
+    //         schema: {
+    //           type: 'object',
+    //           properties: obj_field,
+    //           // $ref: '#/components/schemas/' + definition_key,
+    //         },
+    //       },
+    //     },
+    //   };
+    // }
 
     let security: { bearerAuth?: string[]; user_auth_login?: string[] }[] = [];
     if (request.roles && request.roles.length > 0) {
@@ -307,9 +336,9 @@ export const requestMapping: AsyncFunction<
               ...req.query,
             },
             files: req.files,
-            body: fixParam(request.params?.body, req?.body),
             query: fixParam(request.params?.query, req.query),
             path: fixParam(request.params?.path, req.params),
+            body: req?.body,
             user: user,
           };
 

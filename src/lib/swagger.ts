@@ -41,6 +41,7 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
     swagger.paths[v.path][v.method] = {
       tags: ['No named'],
       ...v.data,
+      requestBody: v.data.requestBody,
       responses: {
         200: {
           description: 'OK',
