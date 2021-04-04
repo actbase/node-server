@@ -2,6 +2,7 @@ import swaggerUi from 'swagger-ui-express';
 // @ts-ignore
 import { PageData, SwaggerOption } from '../types';
 import express from 'express';
+import { omit } from 'lodash';
 
 // eslint-disable-next-line no-undef
 const swagger = require('../../assets/swagger-data.json');
@@ -40,7 +41,7 @@ const swaggerHandler = (app: express, options: SwaggerOption, { pages, definitio
     if (!swagger.paths[v.path]) swagger.paths[v.path] = {};
     swagger.paths[v.path][v.method] = {
       tags: ['No named'],
-      ...v.data,
+      ...omit(v.data, ['resultKey', 'consumes']),
       requestBody: v.data.requestBody,
       responses: {
         200: {

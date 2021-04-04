@@ -296,17 +296,17 @@ export const requestMapping: AsyncFunction<
     //   };
     // }
 
-    let security: { bearerAuth?: string[]; user_auth_login?: string[] }[] = [];
+    let security: { Bearer?: string[]; OAuthLogin?: string[] }[] = [];
     if (request.roles && request.roles.length > 0) {
       request.roles = request.roles.map(v => v?.toLowerCase?.());
       security = [
         {
-          user_auth_login: request.roles?.map(v => {
+          OAuthLogin: request.roles?.map(v => {
             return v?.indexOf(':') > 0 ? v.substring(0, v.indexOf(':')).toLowerCase() : v.toLowerCase();
           }),
         },
         {
-          bearerAuth: [],
+          Bearer: [],
         },
       ];
     }

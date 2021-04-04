@@ -7,14 +7,14 @@
   "servers": [],
   "paths": {},
   "components": {
-    "schemes": {},
+    "schemas": {},
     "securitySchemes": {
       "Bearer": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       },
-      "user_auth_login": {
+      "OAuthLogin": {
         "type": "oauth2",
         "flows": {
           "password": {
@@ -27,12 +27,11 @@
   },
   "security": [
     {
-      "user_auth_login": []
+      "OAuthLogin": []
     },
     {
       "bearerAuth": []
     }
   ],
-  "tags": [],
-  "externalDocs": {}
+  "tags": []
 }
