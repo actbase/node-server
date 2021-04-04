@@ -1,6 +1,6 @@
-import { AsyncFunctions } from '../types';
+import { AsyncFunctions, DTOObject } from '../types';
 import { getSequelize } from './database';
-import { Model, ModelCtor } from 'sequelize/types/lib/model';
+import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
 
 export type RepoFn = {
   findAll: (model: ModelCtor<Model>, args: any) => Promise<any>;
@@ -8,6 +8,7 @@ export type RepoFn = {
   findAndCountAll: (model: ModelCtor<Model>, args: any) => Promise<any>;
   count: (model: ModelCtor<Model>, args: any) => Promise<any>;
   create: (model: ModelCtor<Model>, args: any) => Promise<any>;
+  getObjects: (model: ModelCtor<Model>, args: GetObjectArgs) => Promise<any>;
 };
 
 export type ServiceMethodItem = AsyncFunctions<[RepoFn, object], void>;
@@ -20,7 +21,50 @@ export type RunningMethod<T> = {
   [P in keyof T]: AsyncFunctions<any, void>;
 };
 
-const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, void> {
+export interface PageRequest {
+  page: number;
+  limit: number;
+  sort: string;
+  dir: string;
+}
+
+export const pagingRequestParse = (
+  params: { page?: any; limit?: any; sort?: any; dir?: any } | undefined,
+): PageRequest => {
+  const page = parseInt(params?.page || '0');
+  const limit = parseInt(params?.limit || '30');
+  const sort = params?.sort || 'created_at';
+  const dir = params?.dir || 'desc';
+
+  return { page, limit, sort, dir };
+};
+
+export const pagingResponseParse = (
+  request: PageRequest,
+  pageObject: { rows: any[]; count: number },
+  fn: ((o: any) => any) | undefined,
+) => {
+  console.log('pagingResponse');
+  const max_page = Math.ceil(pageObject.count / request.limit) - 1;
+  return {
+    items: pageObject.rows?.map(v => (fn ? fn(v?.dataValues || v) : v?.dataValues || v)),
+    page: request.page,
+    page_size: request.limit,
+    max_page,
+    has_prev: request.page > 0,
+    has_next: request.page < max_page,
+    total_elements: pageObject.count,
+  };
+};
+
+export interface GetObjectArgs extends FindAndCountOptions {
+  pagable?: any;
+  exportTo?: DTOObject;
+  user?: any;
+  fields?: string;
+}
+
+const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, any> {
   return async function(...params: any) {
     const sequlize = getSequelize();
     if (!sequlize) return;
@@ -37,6 +81,54 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, vo
         findAndCountAll: (model: ModelCtor<Model>, args: any) => {
           return model.findAndCountAll({ ...args, transaction });
         },
+        getObjects: async (model: ModelCtor<Model>, args: GetObjectArgs) => {
+          const isPaging = !!args.pagable;
+          const page = pagingRequestParse(args.pagable);
+          const target = args.exportTo;
+          const user = args.user;
+          const fields = args.fields;
+
+          delete args.pagable;
+          delete args.exportTo;
+          delete args.user;
+          delete args.fields;
+
+          if (isPaging) {
+            const output = await model.findAndCountAll(
+              target?.middleware(
+                {
+                  ...args,
+                  limit: page.limit,
+                  offset: page.page * page.limit,
+                  order: [
+                    [page.sort, page.dir],
+                    ['id', 'asc'],
+                  ],
+                },
+                user,
+                fields,
+              ),
+            );
+            return pagingResponseParse(page, output, target?.map);
+          } else {
+            const output = await model.findAll(
+              target?.middleware(
+                {
+                  ...args,
+                  limit: page.limit,
+                  offset: page.page * page.limit,
+                  order: [
+                    [page.sort, page.dir],
+                    ['id', 'asc'],
+                  ],
+                },
+                user,
+                fields,
+              ),
+            );
+            return target?.collect(output);
+          }
+        },
         count: (model: ModelCtor<Model>, args: any) => {
           return model.count({ ...args, transaction });
         },
@@ -44,8 +136,9 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, vo
           return model.create(args, { transaction });
         },
       };
-      await fn(repo, params);
+      const output = await fn(repo, params);
       await transaction.commit();
+      return output;
     } catch (e) {
       await transaction.rollback();
       throw e;

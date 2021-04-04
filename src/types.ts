@@ -1,5 +1,6 @@
 // @ts-ignore
 import { DataTypeOf } from './contants/DataType';
+import { FindAndCountOptions } from 'sequelize/types/lib/model';
 
 // @ts-ignore
 export type AsyncFunctions<A, O> = (...args: A) => Promise<O>;
@@ -10,6 +11,7 @@ export interface DTOObject {
   properties: RequestParamObject;
   map: (o: any) => any;
   collect: (o: any[]) => any[];
+  middleware: (options: any, user: any, fields: string | undefined) => FindAndCountOptions;
 }
 
 export interface PageData {
