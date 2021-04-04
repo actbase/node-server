@@ -1,7 +1,13 @@
 import { DatabaseOption } from '../types';
 import { DataTypes, Sequelize } from 'sequelize';
 import { Options } from 'sequelize/types/lib/sequelize';
-import { Model, ModelAttributes, ModelCtor, ModelOptions } from 'sequelize/types/lib/model';
+import {
+  Model,
+  ModelAttributeColumnOptions,
+  ModelAttributes,
+  ModelCtor,
+  ModelOptions,
+} from 'sequelize/types/lib/model';
 
 interface ConfigSpec {
   container?: Sequelize;
@@ -19,16 +25,17 @@ interface ModelExtraOptions extends ModelOptions {
   with?: string[];
 }
 
-// @ts-ignore
-export const createModel = function <T extends Model>(
+export interface DBModel extends ModelCtor<Model> {
+
+}
+
+export const createModel = (
   name: string,
-  column: ModelAttributes<T>,
+  column: ModelAttributes,
   options?: ModelExtraOptions,
   associate?: () => void,
-): ModelCtor<T> {
-  const _column = {
-    ...column,
-  };
+): DBModel => {
+  const _column: { [key: string]: ModelAttributeColumnOptions } = {};
 
   if (options?.with?.includes('*') || options?.with?.includes('id')) {
     _column.id = {
@@ -39,6 +46,22 @@ export const createModel = function <T extends Model>(
       comment: '고유키',
     };
   }
+
+  Object.keys(column).forEach(key => {
+    // @ts-ignore
+    let type = column[key].type;
+    if (typeof type.db === 'function') {
+      type = type();
+    }
+    if (type.db) {
+      type = type.db;
+    }
+    _column[key] = {
+      // @ts-ignore
+      ...column[key],
+      type,
+    };
+  });
 
   if (options?.with?.includes('*') || options?.with?.includes('created_at')) {
     _column.created_at = {
@@ -72,7 +95,7 @@ export const createModel = function <T extends Model>(
     });
   }
 
-  // @ts-ignore
+  //@ts-ignore
   return domain;
 };
 
@@ -101,6 +124,6 @@ export const dbAssociate = () => {
   });
 };
 
-export const getSequelize = () => {
+export const getSequelize = (): Sequelize | undefined => {
   return config.container;
 };

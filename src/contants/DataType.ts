@@ -1,10 +1,14 @@
+import { DataTypes, IntegerDataTypeOptions } from 'sequelize';
+import { AbstractDataTypeConstructor, NumberDataTypeOptions } from 'sequelize/types/lib/data-types';
+
 export interface DataTypeOf {
   swagger?: {
     type?: string;
     format?: string;
-    enum?: any;
+    enum?: string[];
+    example?: any;
   };
-  sequalize?: any;
+  db?: AbstractDataTypeConstructor;
 }
 
 export interface DataTypeObject {
@@ -12,40 +16,52 @@ export interface DataTypeObject {
 }
 
 export const DataType = {
-  INT: () => ({
+  INT: (options: IntegerDataTypeOptions | undefined) => ({
     swagger: {
       type: 'integer',
       format: 'int32',
     },
+    db: DataTypes.INTEGER(options),
   }),
-  LONG: () => ({
+  LONG: (options: IntegerDataTypeOptions | undefined) => ({
     swagger: {
       type: 'integer',
       format: 'int64',
     },
+    db: DataTypes.INTEGER(options),
   }),
-  FLOAT: () => ({
+  FLOAT: (options: NumberDataTypeOptions | undefined) => ({
     swagger: {
       type: 'number',
       format: 'float',
     },
+    db: DataTypes.INTEGER(options),
   }),
-  DOUBLE: () => ({
+  DOUBLE: (options: NumberDataTypeOptions | undefined) => ({
     swagger: {
       type: 'number',
       format: 'double',
     },
+    db: DataTypes.INTEGER(options),
   }),
-  STRING: () => ({
+  STRING: (length = 255) => ({
     swagger: {
       type: 'string',
     },
+    db: DataTypes.STRING({ length }),
+  }),
+  TEXT: (length = undefined) => ({
+    swagger: {
+      type: 'string',
+    },
+    db: DataTypes.TEXT({ length }),
   }),
   PASSWORD: () => ({
     swagger: {
       type: 'string',
       format: 'password',
     },
+    db: DataTypes.STRING({ length: 255 }),
   }),
   ENUM: (...values: string[]) => ({
     swagger: {
@@ -53,17 +69,20 @@ export const DataType = {
       enum: values,
       example: values[0],
     },
+    db: DataTypes.ENUM(...values),
   }),
   JSON: () => ({
     swagger: {
       type: 'object',
     },
+    db: DataTypes.JSON,
   }),
   BASE64: () => ({
     swagger: {
       type: 'string',
       format: 'byte',
     },
+    db: DataTypes.TEXT,
   }),
   BINARY: () => ({
     swagger: {
@@ -75,17 +94,20 @@ export const DataType = {
     swagger: {
       type: 'boolean',
     },
+    db: DataTypes.BOOLEAN,
   }),
   DATEONLY: () => ({
     swagger: {
       type: 'string',
       format: 'date',
     },
+    db: DataTypes.DATEONLY,
   }),
   DATETIME: () => ({
     swagger: {
       type: 'string',
       format: 'date-time',
     },
+    db: DataTypes.DATE,
   }),
 };
