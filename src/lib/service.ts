@@ -3,12 +3,14 @@ import { getSequelize } from './database';
 import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
 
 export type RepoFn = {
-  findAll: (model: ModelCtor<Model>, args: any) => Promise<any>;
-  findOne: (model: ModelCtor<Model>, args: any) => Promise<any>;
-  findAndCountAll: (model: ModelCtor<Model>, args: any) => Promise<any>;
-  count: (model: ModelCtor<Model>, args: any) => Promise<any>;
-  create: (model: ModelCtor<Model>, args: any) => Promise<any>;
-  getObjects: (model: ModelCtor<Model>, args: GetObjectArgs) => Promise<any>;
+  findAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<T[]>;
+  findOne: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<T>;
+  findAndCountAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<{ count: number; rows: T[] }>;
+  count: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<{ [key: string]: number }>;
+  create: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<T>;
+  getObjects: <T extends Model>(model: ModelCtor<T>, args: GetObjectArgs) => Promise<any>;
+  save: <T extends Model>(model: T) => Promise<T>;
+  destroy: <T extends Model>(model: T) => Promise<void>;
 };
 
 export type ServiceMethodItem = AsyncFunctions<[RepoFn, object], void>;
@@ -44,7 +46,6 @@ export const pagingResponseParse = (
   pageObject: { rows: any[]; count: number },
   fn: ((o: any) => any) | undefined,
 ) => {
-  console.log('pagingResponse');
   const max_page = Math.ceil(pageObject.count / request.limit) - 1;
   return {
     items: pageObject.rows?.map(v => (fn ? fn(v?.dataValues || v) : v?.dataValues || v)),
@@ -72,13 +73,13 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
     const transaction = await sequlize.transaction();
     try {
       const repo: RepoFn = {
-        findAll: (model: ModelCtor<Model>, args: any) => {
+        findAll: (model, args) => {
           return model.findAll({ ...args, transaction });
         },
-        findOne: (model: ModelCtor<Model>, args: any) => {
+        findOne: (model, args) => {
           return model.findOne({ ...args, transaction });
         },
-        findAndCountAll: (model: ModelCtor<Model>, args: any) => {
+        findAndCountAll: (model, args: any) => {
           return model.findAndCountAll({ ...args, transaction });
         },
         getObjects: async (model: ModelCtor<Model>, args: GetObjectArgs) => {
@@ -129,11 +130,17 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
             return target?.collect(output);
           }
         },
-        count: (model: ModelCtor<Model>, args: any) => {
+        count: (model, args) => {
           return model.count({ ...args, transaction });
         },
-        create: (model: ModelCtor<Model>, args: any) => {
+        create: (model, args) => {
           return model.create(args, { transaction });
+        },
+        save: model => {
+          return model.save({ transaction });
+        },
+        destroy: model => {
+          return model.destroy({ transaction });
         },
       };
       const output = await fn(repo, params);
