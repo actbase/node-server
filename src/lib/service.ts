@@ -101,10 +101,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
                   ...args,
                   limit: page.limit,
                   offset: page.page * page.limit,
-                  order: [
-                    [page.sort, page.dir],
-                    ['id', 'asc'],
-                  ],
+                  order: [[page.sort, page.dir]],
                 },
                 user,
                 fields,
@@ -118,10 +115,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
                   ...args,
                   limit: page.limit,
                   offset: page.page * page.limit,
-                  order: [
-                    [page.sort, page.dir],
-                    ['id', 'asc'],
-                  ],
+                  order: [[page.sort, page.dir]],
                 },
                 user,
                 fields,

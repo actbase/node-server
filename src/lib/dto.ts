@@ -5,7 +5,7 @@ export const createDto = (
   properties: { [key: string]: RequestParam },
   entity?: {
     defineModel?: any;
-    middleware?: (attrs: any, user: any, fields: any) => void;
+    middleware?: (options: any, attrs: any, user: any, fields: any) => void;
   },
 ): DTOObject | undefined => {
   if (!properties) return undefined;
@@ -51,7 +51,7 @@ export const createDto = (
         attrs = attrs.concat(ATTRS);
       }
 
-      entity?.middleware?.(attrs, user, fields);
+      entity?.middleware?.(options, attrs, user, fields);
 
       if (!options.attributes) options.attributes = [];
       options.attributes = options.attributes.concat(attrs.filter(v => typeof v === 'object' || ATTRS.includes(v)));

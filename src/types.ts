@@ -61,7 +61,7 @@ export interface DatabaseOption {
 }
 
 export interface RequestParam {
-  type: 'string' | 'number' | 'array' | 'object' | DataTypeOf;
+  type: 'string' | 'number' | 'array' | 'object' | DataTypeOf | (() => DataTypeOf);
   description?: string;
   example?: string;
   enum?: string[];

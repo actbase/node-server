@@ -13,6 +13,7 @@ import passport from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import { pick } from 'lodash';
 import * as jwt from 'jsonwebtoken';
+import { DataTypeOf } from '../contants/DataType';
 
 // @ts-ignore
 
@@ -161,21 +162,35 @@ export const requestMapping: AsyncFunction<
     params: DTOObject | RequestParamObject | undefined,
     extra: { in: string; required?: boolean },
   ): any => {
-    if (params?.__dto_name) {
-      const _params = <RequestParamObject>params.properties;
-      return Object.keys(_params || {}).map(name => ({
+    const _params = params?.__dto_name ? <RequestParamObject>params.properties : <RequestParamObject>params;
+    return Object.keys(_params || {}).map(name => {
+      const args: { [key: string]: any } = {
+        type: _params[name].type,
+        format: undefined,
+        description: _params[name]?.description,
+        example: _params[name]?.example,
+        enum: undefined,
+      };
+
+      if (typeof _params[name].type !== 'string') {
+        let o2 = undefined;
+        if (typeof _params[name].type === 'function') {
+          o2 = (<Function>_params[name].type)();
+        } else {
+          o2 = <DataTypeOf>_params[name].type;
+        }
+        args.type = o2?.swagger?.type;
+        args.format = o2?.swagger?.format;
+        args.example = o2?.swagger?.example;
+        args.enum = o2?.swagger?.enum;
+      }
+
+      return {
         name,
         ...extra,
-        ..._params[name],
-      }));
-    } else {
-      const _params = <RequestParamObject>params;
-      return Object.keys(_params || {}).map(name => ({
-        name,
-        ...extra,
-        ..._params[name],
-      }));
-    }
+        ...args,
+      };
+    });
   };
 
   config.pages.sort((a, b) => (a.size > b.size ? 1 : a.size < b.size ? -1 : 0));
@@ -243,59 +258,6 @@ export const requestMapping: AsyncFunction<
       }
     }
 
-    // if (Object.keys(request.params?.form || {}).length > 0) {
-    //   consumes[0] = 'multipart/form-data';
-    //   const formObject = defineObject(request.params?.form, { in: 'formData' });
-    //   if (formObject) parameters.push(...formObject);
-    // } else if (request.params?.body && Object.keys(request.params?.body)?.length) {
-    //   const is_array = Array.isArray(request.params?.body);
-    //   const obj_field = is_array ? (<object[]>request.params?.body)?.[0] : request.params?.body;
-    //
-    //   let definition_key = String((<DTOObject>obj_field)?.__dto_name || '');
-    //   if (definition_key) {
-    //     definitions[definition_key] = {
-    //       type: 'object',
-    //       properties: (<DTOObject>obj_field)?.properties,
-    //     };
-    //   } else {
-    //     definition_key = `UNDEFINED_${Object.keys(definitions).length}`;
-    //     definitions[definition_key] = is_array
-    //       ? {
-    //           type: 'array',
-    //           items: {
-    //             type: 'object',
-    //             properties: obj_field,
-    //           },
-    //         }
-    //       : {
-    //           type: 'object',
-    //           properties: obj_field,
-    //         };
-    //   }
-    //
-    //   // parameters.push({
-    //   //   name: 'body',
-    //   //   in: 'body',
-    //   //   type: 'object',
-    //   //   properties: request.params?.body,
-    //   //   // schema: {
-    //
-    //   //   // },
-    //   // });
-    //
-    //   requestBody = {
-    //     content: {
-    //       'application/json': {
-    //         schema: {
-    //           type: 'object',
-    //           properties: obj_field,
-    //           // $ref: '#/components/schemas/' + definition_key,
-    //         },
-    //       },
-    //     },
-    //   };
-    // }
-
     let security: { Bearer?: string[]; OAuthLogin?: string[] }[] = [];
     if (request.roles && request.roles.length > 0) {
       request.roles = request.roles.map(v => v?.toLowerCase?.());
@@ -333,6 +295,7 @@ export const requestMapping: AsyncFunction<
       req.user = undefined;
       try {
         const fn = passport.authenticate('jwt', { session: false }, async (err, user) => {
+          console.log('authenticate', err, user);
           req.user = undefined;
           if (!err) req.user = user || undefined;
           next();
@@ -351,6 +314,7 @@ export const requestMapping: AsyncFunction<
         try {
           // @ts-ignore
           const user: AppUser = req.user;
+          console.log('execute..');
 
           const args = {
             params: {
@@ -379,10 +343,12 @@ export const requestMapping: AsyncFunction<
                   success = true;
                   break;
                 }
-              } else if (user_roles.includes(sec)) {
+              } else if (user_roles.includes(sec?.toLowerCase())) {
                 success = true;
               }
             }
+
+            console.log(user_roles, request.roles);
 
             if (!success) {
               throw {

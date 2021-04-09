@@ -25,9 +25,7 @@ interface ModelExtraOptions extends ModelOptions {
   with?: string[];
 }
 
-export interface DBModel extends ModelCtor<Model> {
-
-}
+export interface DBModel extends ModelCtor<Model> {}
 
 export const createModel = (
   name: string,
@@ -50,7 +48,7 @@ export const createModel = (
   Object.keys(column).forEach(key => {
     // @ts-ignore
     let type = column[key].type;
-    if (typeof type.db === 'function') {
+    if (typeof type === 'function') {
       type = type();
     }
     if (type.db) {
