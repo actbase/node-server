@@ -1,4 +1,4 @@
-import { AsyncFunctions, DTOObject } from '../types';
+import { DTOObject } from '../types';
 import { getSequelize } from './database';
 import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
 
@@ -11,16 +11,18 @@ export type RepoFn = {
   getObjects: <T extends Model>(model: ModelCtor<T>, args: GetObjectArgs) => Promise<any>;
   save: <T extends Model>(model: T) => Promise<T>;
   destroy: <T extends Model>(model: T) => Promise<void>;
+  destroyAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<any>;
 };
 
-export type ServiceMethodItem = AsyncFunctions<[RepoFn, object], void>;
+export type ServiceMethodItem = (repo: RepoFn, args: unknown[]) => Promise<void>;
 
 export type ServiceMethod<T> = {
-  [P in keyof T]: ServiceMethodItem;
+  [P in keyof T]?: ServiceMethodItem;
 };
 
+export type ExportMethodType = (...args: unknown[]) => Promise<void>;
 export type RunningMethod<T> = {
-  [P in keyof T]: AsyncFunctions<any, void>;
+  [P in keyof T]?: ExportMethodType;
 };
 
 export interface PageRequest {
@@ -65,8 +67,8 @@ export interface GetObjectArgs extends FindAndCountOptions {
   fields?: string;
 }
 
-const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, any> {
-  return async function(...params: any) {
+const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
+  return async function(...params: unknown[]) {
     const sequlize = getSequelize();
     if (!sequlize) return;
 
@@ -77,7 +79,26 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
           return model.findAll({ ...args, transaction });
         },
         findOne: (model, args) => {
-          return model.findOne({ ...args, transaction });
+          const target = args.exportTo;
+          const user = args.user;
+          const fields = args.fields;
+
+          delete args.exportTo;
+          delete args.user;
+          delete args.fields;
+
+          return model.findOne(
+            !target
+              ? { ...args, transaction }
+              : target?.middleware(
+                  {
+                    ...args,
+                    transaction,
+                  },
+                  user,
+                  fields,
+                ),
+          );
         },
         findAndCountAll: (model, args: any) => {
           return model.findAndCountAll({ ...args, transaction });
@@ -113,8 +134,6 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
               target?.middleware(
                 {
                   ...args,
-                  limit: page.limit,
-                  offset: page.page * page.limit,
                   order: [['created_at', 'desc']],
                 },
                 user,
@@ -136,6 +155,9 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
         destroy: model => {
           return model.destroy({ transaction });
         },
+        destroyAll: (model, args) => {
+          return model.destroy({ ...args, transaction });
+        },
       };
       const output = await fn(repo, params);
       await transaction.commit();
@@ -147,12 +169,9 @@ const wrappingFunciton = function(fn: ServiceMethodItem): AsyncFunctions<any, an
   };
 };
 
-export const createService = function<T extends ServiceMethod<T>>(properties: ServiceMethod<T>): RunningMethod<T> {
-  const methods: RunningMethod<T> = {
-    ...properties,
-  };
-
-  Object.keys(properties).forEach((key: string) => {
+export const createService = function<T>(properties: ServiceMethod<T>): RunningMethod<T> {
+  let methods: RunningMethod<T> = {};
+  Object.keys(properties).forEach(key => {
     // @ts-ignore
     methods[key] = wrappingFunciton(properties[key]);
   });

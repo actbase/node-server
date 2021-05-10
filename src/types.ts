@@ -52,6 +52,7 @@ export interface SwaggerOption {
 }
 
 export interface DatabaseOption {
+  debug?: boolean;
   dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql' | 'mariadb';
   host: string;
   port: number;

@@ -102,7 +102,7 @@ export const dbInit = (options?: DatabaseOption) => {
   const args: Options = {
     host: options.host,
     dialect: options.dialect,
-    logging: false,
+    logging: options?.debug ? console.log : false,
     timezone: '+09:00',
     pool: {
       max: 20,
