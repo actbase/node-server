@@ -1,27 +1,27 @@
 import { DTOObject, RequestParam } from '../types';
+import { Model, ModelCtor } from 'sequelize/types/lib/model';
 
-export const createDto = (
+export function createDto<T extends Model & { [key: string]: unknown }>(
   name: string,
   properties: { [key: string]: RequestParam },
   entity?: {
-    defineModel?: any;
+    defineModel?: ModelCtor<T>;
     middleware?: (options: any, attrs: any, user: any, fields: any) => void;
   },
-): DTOObject | undefined => {
+): DTOObject | undefined {
   if (!properties) return undefined;
 
-  const map = (item: any) => {
-    let o = item;
-    if (o.dataValues) o = o.dataValues;
+  const map = (item: T) => {
+    const o: any = item?.dataValues || item;
     return Object.keys(properties).reduce((p: { [key: string]: any }, key) => {
       if (properties[key].type === 'number') {
         p[key] = parseInt(String(o[key]));
       } else if (properties[key].type === 'array' && typeof o[key] === 'string') {
-        p[key] = JSON.parse(o[key]);
+        p[key] = JSON.parse(o[key] as string);
       } else if (properties[key].type === 'object' && typeof o[key] === 'string') {
-        p[key] = JSON.parse(o[key]);
+        p[key] = JSON.parse(o[key] as string);
       } else {
-        p[key] = o[key];
+        p[key] = item[key];
       }
       return p;
     }, {});
@@ -59,4 +59,4 @@ export const createDto = (
       return options;
     },
   };
-};
+}

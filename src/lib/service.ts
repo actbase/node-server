@@ -126,9 +126,14 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
                 },
                 user,
                 fields,
-              ),
+              ) || {
+                ...args,
+                limit: page.limit,
+                offset: page.page * page.limit,
+                order: [[page.sort, page.dir]],
+              },
             );
-            return pagingResponseParse(page, output, target?.map);
+            return pagingResponseParse(page, output, target?.map || (o => o));
           } else {
             const output = await model.findAll(
               target?.middleware(
@@ -169,7 +174,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
   };
 };
 
-export const createService = function<T>(properties: ServiceMethod<T>): RunningMethod<T> {
+export const createService = function<T extends ServiceMethod<T>>(properties: T): RunningMethod<T> {
   let methods: RunningMethod<T> = {};
   Object.keys(properties).forEach(key => {
     // @ts-ignore
