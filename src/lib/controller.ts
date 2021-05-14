@@ -1,6 +1,5 @@
 import {
   AsyncFunction,
-  AsyncFunctions,
   AuthOption,
   ControllerOption,
   ControllerRequest,
@@ -15,17 +14,28 @@ import { pick } from 'lodash';
 import * as jwt from 'jsonwebtoken';
 import { DataTypeOf } from '../contants/DataType';
 
-// @ts-ignore
-
 interface AppUser {
   id?: number;
   roles?: string[];
 }
 
+interface ExecuteArgs {
+  path: { [key: string]: unknown };
+  query: { [key: string]: unknown };
+  body: { [key: string]: unknown };
+  user: { [key: string]: unknown };
+}
+
+type ExecuteType =
+  | ((args: ExecuteArgs) => Promise<unknown | void>)
+  | ((req: any, res: any, next: any) => Promise<unknown | void>)
+  | ((args: ExecuteArgs) => unknown | void)
+  | ((req: any, res: any, next: any) => unknown | void);
+
 interface ConfigSpec {
   pages: {
     request: ControllerRequest;
-    execute: AsyncFunction<any, any> | AsyncFunctions<[any, any, any, any], any>;
+    execute: ExecuteType;
     size: number;
     options: ControllerOption;
   }[];
@@ -36,13 +46,7 @@ const config: ConfigSpec = {
   pages: [],
 };
 
-export const createController = (
-  request: ControllerRequest,
-  execute:
-    | AsyncFunction<{ path?: { [key: string]: any }; body?: { [key: string]: any }; user?: AppUser }, any>
-    | AsyncFunctions<[express.Request, express.Response, NextFunction, any], any>,
-  options: ControllerOption,
-) => {
+export const createController = (request: ControllerRequest, execute: ExecuteType, options: ControllerOption) => {
   config.pages.push({
     request,
     execute,
@@ -329,7 +333,6 @@ export const requestMapping: AsyncFunction<
             user: user,
           };
 
-          const params = args.params;
           if (request.roles && request.roles.length > 0 && !request.roles.includes('any')) {
             const user_roles = user?.roles?.map(v => v.toLowerCase()) || [];
             let success = false;
@@ -360,7 +363,7 @@ export const requestMapping: AsyncFunction<
           }
 
           if (execute.length >= 3) {
-            return await execute(req, res, next, { params });
+            return await execute(req, res, next);
           } else {
             // @ts-ignore
             const output = await execute(args); //{ ...args, user: req.user });
