@@ -37,7 +37,6 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
       } else {
         p[key] = o[key];
       }
-
       return p;
     }, {});
   };
