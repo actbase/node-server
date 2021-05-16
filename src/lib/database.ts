@@ -4,10 +4,12 @@ import { Options } from 'sequelize/types/lib/sequelize';
 import {
   Model,
   ModelAttributeColumnOptions,
-  ModelAttributes,
+  ModelAttributeColumnReferencesOptions,
   ModelCtor,
   ModelOptions,
+  ModelValidateOptions,
 } from 'sequelize/types/lib/model';
+import { TypeIsDefine } from '../contants/TypeIs';
 
 interface ConfigSpec {
   container?: Sequelize;
@@ -21,6 +23,19 @@ const config: ConfigSpec = {
   associates: [],
 };
 
+interface ModelPreference extends TypeIsDefine {
+  unique?: boolean | string | { name: string; msg: string };
+  primaryKey?: boolean;
+  autoIncrement?: boolean;
+  autoIncrementIdentity?: boolean;
+  references?: string | ModelAttributeColumnReferencesOptions;
+  onUpdate?: string;
+  onDelete?: string;
+  validate?: ModelValidateOptions;
+
+  connectTo?: any;
+}
+
 interface ModelExtraOptions extends ModelOptions {
   with?: string[];
 }
@@ -29,7 +44,7 @@ export interface DBModel extends ModelCtor<Model> {}
 
 export const createModel = (
   name: string,
-  column: ModelAttributes,
+  columns: { [key: string]: ModelPreference },
   options?: ModelExtraOptions,
   associate?: () => void,
 ): DBModel => {
@@ -45,19 +60,18 @@ export const createModel = (
     };
   }
 
-  Object.keys(column).forEach(key => {
-    // @ts-ignore
-    let type = column[key].type;
-    if (typeof type === 'function') {
-      type = type();
+  Object.keys(columns).forEach((key: string) => {
+    const column = columns[key];
+    const type = 'function' === typeof column.type ? column.type() : column.type;
+
+    if (column.connectTo) {
+      delete column.connectTo;
     }
-    if (type.db) {
-      type = type.db;
-    }
+
     _column[key] = {
-      // @ts-ignore
-      ...column[key],
-      type,
+      ...column,
+      type: type.toSequelize(),
+      allowNull: !column.required,
     };
   });
 
@@ -86,6 +100,7 @@ export const createModel = (
     ...options,
     tableName: name,
   });
+
   if (associate) {
     config.associates?.push({
       domain,

@@ -47,7 +47,6 @@ export const run = (dirname: string, options: ServerOption) => {
     });
 
     app.use('/v1', controllers.router);
-
     swaggerHandler(app, options.swagger, controllers);
 
     if (dbContainer) {
@@ -73,20 +72,11 @@ export const run = (dirname: string, options: ServerOption) => {
       res.send('chadu-serv');
     });
 
-    //커스텀 404 페이지
     app.use((_req, res) => {
       res.type('text/plain');
       res.status(404);
       res.send('404 - Not Found');
     });
-
-    //커스텀 500 페이지
-    // app.use((err, _req, res) => {
-    //   // console.log(err.stack);
-    //   res.type('text/plain');
-    //   res.status(500);
-    //   res.send('500 - Server Error');
-    // });
 
     return { app };
   };
@@ -94,10 +84,9 @@ export const run = (dirname: string, options: ServerOption) => {
   initServer()
     .then(({ app }) => {
       const server = http.createServer(app);
-      const port = options.port || 4200;
-
+      const port = options.port || 3100;
       server.listen(port, () => {
-        console.log(`Server is running on ${port} port`);
+        console.log(`Server is running on ${port} port.  http://localhost:${port}`);
       });
     })
     .catch(console.warn);

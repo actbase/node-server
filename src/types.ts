@@ -1,9 +1,7 @@
-// @ts-ignore
 import { DataTypeOf } from './contants/DataType';
 import { FindAndCountOptions } from 'sequelize/types/lib/model';
 
 // @ts-ignore
-export type AsyncFunctions<A, O> = (...args: A) => Promise<O>;
 export type AsyncFunction<A, O> = (args: A) => Promise<O>;
 
 export interface DTOObject {
@@ -32,8 +30,8 @@ export interface PageData {
 
 export interface ServerOption {
   port: number;
-  database: DatabaseOption;
   auth: AuthOption;
+  database: DatabaseOption;
   swagger: SwaggerOption;
 }
 
@@ -53,7 +51,7 @@ export interface SwaggerOption {
 
 export interface DatabaseOption {
   debug?: boolean;
-  dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql' | 'mariadb';
+  dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql';
   host: string;
   port: number;
   scheme: string;
