@@ -1,71 +1,79 @@
 import swaggerUi from 'swagger-ui-express';
 import { SwaggerOption } from '../types';
 import express from 'express';
-import { getDtoDefinitions } from './dto';
+import { getDtoDefinitions, ValueObject } from './dto';
+import { getPages, SwaggerData } from './route';
+import { TypeIsObject } from '../contants/TypeIs';
 
 const swagger = require('../../assets/swagger-data.json');
 
-// const methods = ['get', 'post', 'put', 'delete'];
+const methods = ['get', 'post', 'put', 'delete'];
 
 const swaggerHandler = (app: express.Express, options: SwaggerOption, _pages: any, _definitions?: any[]) => {
-  // let schemas: any[] = [];
-  // schemas = schemas.concat(definitions);
-  // schemas = schemas.concat();
-  // swagger.components.schemas = schemas;
-
   const dto = getDtoDefinitions();
   Object.keys(dto).map(key => {
     swagger.components.schemas[key] = dto[key];
   });
 
-  // console.log(_definitions, schemas);
-
   swagger.info.title = options.name;
   swagger.info.version = options.version;
   swagger.info.description = options.description;
 
-  // pages.sort((a: PageData, b: PageData) => {
-  //   const ix1 = methods.indexOf(a.method);
-  //   const ix2 = methods.indexOf(b.method);
-  //   return (a.data?.tags?.[0] || 0) > (b.data?.tags?.[0] || 0)
-  //     ? 1
-  //     : (a.data?.tags?.[0] || 0) < (b.data?.tags?.[0] || 0)
-  //     ? -1
-  //     : a.path > b.path
-  //     ? 1
-  //     : a.path < b.path
-  //     ? -1
-  //     : ix1 > ix2
-  //     ? 1
-  //     : ix1 < ix2
-  //     ? -1
-  //     : 0;
-  // });
+  const pages = getPages();
+  pages.sort((a: SwaggerData, b: SwaggerData) => {
+    const ix1 = methods.indexOf(a.method);
+    const ix2 = methods.indexOf(b.method);
+    return (a.tags?.[0] || 0) > (b.tags?.[0] || 0)
+      ? 1
+      : (a.tags?.[0] || 0) < (b.tags?.[0] || 0)
+      ? -1
+      : a.path.path > b.path.path
+      ? 1
+      : a.path.path < b.path.path
+      ? -1
+      : ix1 > ix2
+      ? 1
+      : ix1 < ix2
+      ? -1
+      : 0;
+  });
 
-  // pages.forEach((v: PageData) => {
-  //   if (!v.data?.tags || !v.data?.summary) return;
-  //
-  //   if (!swagger.paths[v.path]) swagger.paths[v.path] = {};
-  //   swagger.paths[v.path][v.method] = {
-  //     tags: ['No named'],
-  //     ...omit(v.data, ['resultKey', 'consumes']),
-  //     requestBody: v.data.requestBody,
-  //     responses: {
-  //       200: {
-  //         description: 'OK',
-  //         content: {
-  //           'application/json': {
-  //             schema: v.data?.resultKey
-  //               ? {
-  //                   $ref: '#/components/schemas/' + v.data?.resultKey,
-  //                 }
-  //               : undefined,
-  //           },
-  //         },
-  //       },
-  //     },
-  //   };
-  // });
+  pages.forEach((v: SwaggerData) => {
+    if (!swagger.paths[v.path.path]) swagger.paths[v.path.path] = {};
+
+    let resultData = {};
+
+    if ((<ValueObject>v.response)?.__dto_name) {
+      resultData = { schema: { $ref: '#/components/schemas/' + (<ValueObject>v.response)?.__dto_name } };
+    } else {
+      console.log(v.response);
+      // @ts-ignore
+      const t1 = <TypeIsObject>v.response;
+      // @ts-ignore
+      const t2 = typeof t1 === 'function' ? t1() : t1;
+      if (t2?.toSwagger) {
+        resultData = t2.toSwagger();
+      }
+    }
+
+    swagger.paths[v.path.path][v.method] = {
+      tags: v.tags,
+      operationId: v.operationId,
+      summary: v.summary,
+      description: v.description,
+      parameters: v.parameters,
+      //   requestBody?: { [key: string]: any };
+      requestBody: v.requestBody,
+      responses: {
+        200: {
+          description: 'OK',
+          content: {
+            'application/json': resultData,
+          },
+        },
+      },
+    };
+  });
 
   app.use(
     '/swagger-ui.html',

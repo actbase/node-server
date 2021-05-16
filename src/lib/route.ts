@@ -23,9 +23,9 @@ export interface RouteRequest {
   uri: string | RoutePath;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   roles?: string[];
-  query?: RequestParam | ValueObject;
+  query?: RequestParam;
   body?: RequestParam | ValueObject;
-  response?: ValueObject;
+  response?: ValueObject | (() => ValueObject) | TypeIsDefine | (() => TypeIsDefine);
 }
 
 export interface RouteOption {
@@ -52,12 +52,31 @@ interface ConfigSpec {
     size: number;
     options: ControllerOption;
   }[];
+  swaggers: SwaggerData[];
   auth?: AuthOption;
+}
+
+export interface SwaggerData {
+  operationId: string;
+  path: RoutePath;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  tags?: string[];
+  summary?: string;
+  description?: string;
+  parameters?: any[];
+  requestBody?: { [key: string]: any };
+  response?: ValueObject | TypeIsDefine;
+  data?: any;
 }
 
 const config: ConfigSpec = {
   pages: [],
+  swaggers: [],
 };
+
+export function getPages() {
+  return config.swaggers;
+}
 
 const uriRegex = /\{([a-zA-Z0-9\_]+)\}/g;
 
@@ -82,6 +101,58 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
     size: Object.keys(path?.items || {}).length || 0,
     options,
   });
+
+  if (options.tags?.length && options.summary) {
+    const parameters: any[] = [];
+
+    if (path.items) {
+      Object.keys(path.items).forEach(name => {
+        const t = path.items?.[name].type;
+        const t1 = typeof t === 'function' ? t() : t;
+        const t2 = typeof t1 === 'object' ? t1?.toSwagger() : t1;
+        parameters.push({
+          name,
+          ...t2,
+          in: 'path',
+          required: true,
+          description: path.items?.[name].comment,
+        });
+      });
+    }
+
+    if (request.query) {
+      Object.keys(request.query).forEach(name => {
+        const t = request.query?.[name].type;
+        const t1 = typeof t === 'function' ? t() : t;
+        const t2 = typeof t1 === 'string' ? t1 : t1?.toSwagger();
+        parameters.push({
+          name,
+          ...t2,
+          in: 'query',
+          description: request.query?.[name].comment,
+        });
+      });
+    }
+
+    const response = typeof request.response === 'function' ? request.response() : request.response;
+    config.swaggers.push({
+      operationId: request.method + ':' + request.uri,
+      path,
+      method: request.method,
+      tags: options.tags,
+      summary: options.summary,
+      description: options.description,
+      parameters,
+      response,
+      data: {
+        // security: security,
+        // consumes,
+        // parameters,
+        // resultKey,
+        // requestBody,
+      },
+    });
+  }
 };
 
 export const getSwaggerData = () => {

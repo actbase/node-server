@@ -21,13 +21,52 @@ export interface TypeIsDefine {
 }
 
 export const TypeArray = (o: (...options: any) => TypeIsObject) => {
-  return () => ({
+  return (...x: any) => ({
     __name: 'array',
     toSwagger: () => ({
       type: 'array',
-      items: o().toSwagger(),
+      items: o(...x).toSwagger(),
     }),
     toSequelize: () => DataTypes.JSON,
+  });
+};
+
+export const TypePaging = (o: (...options: any) => TypeIsObject) => {
+  return () => ({
+    __name: 'paging',
+    toSwagger: () => ({
+      type: 'object',
+      properties: {
+        page: {
+          type: 'number',
+          comment: '현재 페이지',
+        },
+        page_size: {
+          type: 'number',
+          comment: '페이지당 표시 갯수',
+        },
+        max_page: {
+          type: 'number',
+          comment: '최대페이지',
+        },
+        has_prev: {
+          type: 'boolean',
+          comment: '이전 이동가능 여부',
+        },
+        has_next: {
+          type: 'boolean',
+          comment: '다음 이동가능 여부',
+        },
+        total_elements: {
+          type: 'number',
+          comment: '전체 레코드개수',
+        },
+        items: {
+          type: 'array',
+          items: o().toSwagger(),
+        },
+      },
+    }),
   });
 };
 
