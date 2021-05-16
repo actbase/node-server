@@ -38,6 +38,7 @@ interface ModelPreference extends TypeIsDefine {
 
 interface ModelExtraOptions extends ModelOptions {
   with?: string[];
+  associate?: () => void;
 }
 
 export interface DBModel extends ModelCtor<Model> {}
@@ -46,7 +47,6 @@ export const createModel = (
   name: string,
   columns: { [key: string]: ModelPreference },
   options?: ModelExtraOptions,
-  associate?: () => void,
 ): DBModel => {
   const _column: { [key: string]: ModelAttributeColumnOptions } = {};
   const associates: ((o: any) => void)[] = [];
@@ -115,10 +115,10 @@ export const createModel = (
     );
   }
 
-  if (associate) {
+  if (options?.associate) {
     config.associates?.push({
       domain,
-      associate,
+      associate: options.associate,
     });
   }
 
