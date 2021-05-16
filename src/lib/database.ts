@@ -1,5 +1,5 @@
 import { DatabaseOption } from '../types';
-import { DataTypes, Sequelize } from 'sequelize';
+import { DataTypes, ModelStatic, Sequelize } from 'sequelize';
 import { Options } from 'sequelize/types/lib/sequelize';
 import {
   Model,
@@ -33,7 +33,7 @@ interface ModelPreference extends TypeIsDefine {
   onDelete?: string;
   validate?: ModelValidateOptions;
 
-  connectTo?: any;
+  connectTo?: ModelStatic<Model>;
 }
 
 interface ModelExtraOptions extends ModelOptions {
@@ -49,6 +49,7 @@ export const createModel = (
   associate?: () => void,
 ): DBModel => {
   const _column: { [key: string]: ModelAttributeColumnOptions } = {};
+  const associates: ((o: any) => void)[] = [];
 
   if (options?.with?.includes('*') || options?.with?.includes('id')) {
     _column.id = {
@@ -64,7 +65,11 @@ export const createModel = (
     const column = columns[key];
     const type = 'function' === typeof column.type ? column.type() : column.type;
 
+    const connectModel = column.connectTo;
     if (column.connectTo) {
+      associates.push((o: any) => {
+        o?.belongsTo(connectModel, { foreignKey: key });
+      });
       delete column.connectTo;
     }
 
@@ -101,6 +106,15 @@ export const createModel = (
     tableName: name,
   });
 
+  if (associates?.length > 0) {
+    config.associates?.push(
+      ...associates?.map(v => ({
+        domain,
+        associate: v,
+      })),
+    );
+  }
+
   if (associate) {
     config.associates?.push({
       domain,
@@ -108,8 +122,7 @@ export const createModel = (
     });
   }
 
-  //@ts-ignore
-  return domain;
+  return <DBModel>domain;
 };
 
 export const dbInit = (options?: DatabaseOption) => {

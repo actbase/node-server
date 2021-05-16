@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { AbstractDataType, AbstractDataTypeConstructor } from 'sequelize/types/lib/data-types';
+import { AbstractDataType, AbstractDataTypeConstructor, BlobSize, TextLength } from 'sequelize/types/lib/data-types';
 
 export interface TypeIsObject {
   __name: string;
@@ -19,110 +19,112 @@ export interface TypeIsDefine {
   required?: boolean;
 }
 
-export const ArrayIs = (o: (...options: any) => TypeIsObject) => ({
-  __name: 'array',
-  toSwagger: () => ({
-    type: 'array',
-    items: o().toSwagger(),
-  }),
-  toSequelize: () => DataTypes.JSON,
-});
+export const TypeArray = (o: (...options: any) => TypeIsObject) => {
+  return () => ({
+    __name: 'array',
+    toSwagger: () => ({
+      type: 'array',
+      items: o().toSwagger(),
+    }),
+    toSequelize: () => DataTypes.JSON,
+  });
+};
 
-export const TypeIs: { [key: string]: (...options: any) => TypeIsObject } = {
-  INT: (...options: any) => ({
+export const TypeIs = {
+  INT: (options: { decimals?: number; precision?: number; scale?: number }) => ({
     __name: 'int',
     toSwagger: () => ({
       type: 'integer',
       format: 'int32',
     }),
-    toSequelize: () => DataTypes.INTEGER(...options),
+    toSequelize: () => DataTypes.INTEGER(options),
   }),
-  LONG: (...options: any) => ({
+  LONG: (options: { decimals?: number; precision?: number; scale?: number }) => ({
     __name: 'long',
     toSwagger: () => ({
       type: 'integer',
       format: 'int64',
     }),
-    toSequelize: () => DataTypes.INTEGER(...options),
+    toSequelize: () => DataTypes.INTEGER(options),
   }),
-  FLOAT: (...options: any) => ({
+  FLOAT: (length?: number, decimals?: number) => ({
     __name: 'float',
     toSwagger: () => ({
       type: 'integer',
       format: 'float',
     }),
-    toSequelize: () => DataTypes.FLOAT(...options),
+    toSequelize: () => DataTypes.FLOAT(length, decimals),
   }),
-  DOUBLE: (...options: any) => ({
+  DOUBLE: (length?: number, decimals?: number) => ({
     __name: 'double',
     toSwagger: () => ({
       type: 'number',
       format: 'double',
     }),
-    toSequelize: () => DataTypes.DOUBLE(...options),
+    toSequelize: () => DataTypes.DOUBLE(length, decimals),
   }),
-  STRING: (...options: any) => ({
+  STRING: (length?: number, binary?: boolean) => ({
     __name: 'string',
     toSwagger: () => ({
       type: 'string',
     }),
-    toSequelize: () => DataTypes.STRING(...options),
+    toSequelize: () => DataTypes.STRING(length, binary),
   }),
-  TEXT: (...options: any) => ({
+  TEXT: (length?: TextLength) => ({
     __name: 'text',
     toSwagger: () => ({
       type: 'string',
     }),
-    toSequelize: () => DataTypes.TEXT(...options),
+    toSequelize: () => DataTypes.TEXT({ length }),
   }),
-  PASSWORD: (...options: any) => ({
+  PASSWORD: () => ({
     __name: 'password',
     toSwagger: () => ({
       type: 'string',
       format: 'password',
     }),
-    toSequelize: () => DataTypes.STRING(...options),
+    toSequelize: () => DataTypes.STRING(512),
   }),
-  ENUM: (...options: any) => ({
+  ENUM: (...texts: string[]) => ({
     __name: 'enum',
     toSwagger: () => ({
       type: 'string',
-      enum: options,
-      example: options[0],
+      enum: texts,
+      example: texts[0],
     }),
-    toSequelize: () => DataTypes.ENUM(...options),
+    toSequelize: () => DataTypes.ENUM(...texts),
   }),
-  JSON: (..._options: any) => ({
+  JSON: () => ({
     __name: 'json',
     toSwagger: () => ({
       type: 'object',
     }),
     toSequelize: () => DataTypes.JSON,
   }),
-  BASE64: (...options: any) => ({
+  BASE64: (length?: BlobSize) => ({
     __name: 'base64',
     toSwagger: () => ({
       type: 'string',
       format: 'byte',
     }),
-    toSequelize: () => DataTypes.TEXT(...options),
+    toSequelize: () => DataTypes.BLOB(length),
   }),
-  BINARY: (...options: any) => ({
+  BINARY: (length?: BlobSize) => ({
     __name: 'binary',
     toSwagger: () => ({
       type: 'string',
       format: 'binary',
     }),
-    toSequelize: () => DataTypes.BLOB(...options),
+    toSequelize: () => DataTypes.BLOB(length),
   }),
-  BOOLEAN: (..._options: any) => ({
+  BOOLEAN: () => ({
     __name: 'boolean',
     toSwagger: () => ({
       type: 'boolean',
     }),
     toSequelize: () => DataTypes.BOOLEAN,
   }),
-  DATEONLY: (..._options: any) => ({
+  DATEONLY: () => ({
     __name: 'date',
     toSwagger: () => ({
       type: 'string',
@@ -130,7 +132,7 @@ export const TypeIs: { [key: string]: (...options: any) => TypeIsObject } = {
     }),
     toSequelize: () => DataTypes.DATEONLY(),
   }),
-  DATETIME: (..._options: any) => ({
+  DATETIME: () => ({
     __name: 'datetime',
     toSwagger: () => ({
       type: 'string',
