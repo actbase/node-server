@@ -29,19 +29,17 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
 ): ValueObject {
   const map = (item: T) => {
     const o: any = item?.dataValues || item;
-    return o;
-    // return Object.keys(properties).reduce((p: { [key: string]: any }, key) => {
-    //   // if (properties[key].type === 'number') {
-    //   //   p[key] = parseInt(String(o[key]));
-    //   // } else if (properties[key].type === 'array' && typeof o[key] === 'string') {
-    //   //   p[key] = JSON.parse(o[key] as string);
-    //   // } else if (properties[key].type === 'object' && typeof o[key] === 'string') {
-    //   //   p[key] = JSON.parse(o[key] as string);
-    //   // } else {
-    //   //   p[key] = item[key];
-    //   // }
-    //   // return p;
-    // }, {});
+    return Object.keys(properties).reduce((p: { [key: string]: unknown }, key) => {
+      const property = properties[key];
+      let type = typeof property.type === 'function' ? property.type() : property.type;
+      if ((<TypeIsObject>type)?.fixValue) {
+        p[key] = (<TypeIsObject>type)?.fixValue?.(o[key]);
+      } else {
+        p[key] = o[key];
+      }
+
+      return p;
+    }, {});
   };
 
   const ATTRS = Object.keys(entity?.defineModel?.rawAttributes || {});

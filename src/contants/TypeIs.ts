@@ -10,6 +10,7 @@ export interface TypeIsObject {
     format?: string;
   };
   toSequelize: () => AbstractDataType | AbstractDataTypeConstructor;
+  fixValue?: (data: any) => unknown;
 }
 
 export interface TypeIsDefine {
@@ -38,6 +39,9 @@ export const TypeIs = {
       format: 'int32',
     }),
     toSequelize: () => DataTypes.INTEGER(options),
+    fixValue: o => {
+      return parseInt(String(o), 10);
+    },
   }),
   LONG: (options?: { decimals?: number; precision?: number; scale?: number }): TypeIsObject => ({
     __name: 'long',
@@ -46,6 +50,9 @@ export const TypeIs = {
       format: 'int64',
     }),
     toSequelize: () => DataTypes.INTEGER(options),
+    fixValue: o => {
+      return parseInt(String(o), 10);
+    },
   }),
   FLOAT: (length?: number, decimals?: number): TypeIsObject => ({
     __name: 'float',
@@ -54,6 +61,9 @@ export const TypeIs = {
       format: 'float',
     }),
     toSequelize: () => DataTypes.FLOAT(length, decimals),
+    fixValue: o => {
+      return parseFloat(String(o));
+    },
   }),
   DOUBLE: (length?: number, decimals?: number): TypeIsObject => ({
     __name: 'double',
@@ -62,6 +72,9 @@ export const TypeIs = {
       format: 'double',
     }),
     toSequelize: () => DataTypes.DOUBLE(length, decimals),
+    fixValue: o => {
+      return parseFloat(String(o));
+    },
   }),
   STRING: (length?: number, binary?: boolean): TypeIsObject => ({
     __name: 'string',
@@ -69,6 +82,9 @@ export const TypeIs = {
       type: 'string',
     }),
     toSequelize: () => DataTypes.STRING(length, binary),
+    fixValue: o => {
+      return String(o);
+    },
   }),
   TEXT: (length?: TextLength): TypeIsObject => ({
     __name: 'text',
@@ -76,6 +92,9 @@ export const TypeIs = {
       type: 'string',
     }),
     toSequelize: () => DataTypes.TEXT({ length }),
+    fixValue: o => {
+      return String(o);
+    },
   }),
   PASSWORD: (): TypeIsObject => ({
     __name: 'password',
@@ -93,6 +112,9 @@ export const TypeIs = {
       example: texts[0],
     }),
     toSequelize: () => DataTypes.ENUM(...texts),
+    fixValue: o => {
+      return texts.includes(String(o)) ? String(o) : undefined;
+    },
   }),
   JSON: (): TypeIsObject => ({
     __name: 'json',
@@ -123,6 +145,9 @@ export const TypeIs = {
       type: 'boolean',
     }),
     toSequelize: () => DataTypes.BOOLEAN,
+    fixValue: o => {
+      return String(o) === 'true' ? true : String(o) === 'false' ? false : !!o;
+    },
   }),
   DATEONLY: (): TypeIsObject => ({
     __name: 'date',
