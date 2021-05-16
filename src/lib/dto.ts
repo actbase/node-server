@@ -19,6 +19,28 @@ export interface VOProperties {
   column?: string;
 }
 
+interface ConfigSpec {
+  definitions: {
+    [key: string]: {
+      type: string;
+      properties: {
+        [key: string]: {
+          type?: 'string';
+          description?: 'string';
+        };
+      };
+    };
+  };
+}
+
+const config: ConfigSpec = {
+  definitions: {},
+};
+
+export function getDtoDefinitions() {
+  return config.definitions;
+}
+
 export function createDto<T extends Model & { [key: string]: unknown }>(
   name: string,
   properties: { [key: string]: VOProperties },
@@ -27,6 +49,25 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     middleware?: (options: any, attrs: any, user: any, fields: any) => void;
   },
 ): ValueObject {
+  config.definitions[name] = {
+    type: 'object',
+    properties: Object.keys(properties).reduce((p: { [key: string]: any }, key) => {
+      const property = properties[key];
+      const type = 'function' === typeof property.type ? property.type() : property.type;
+      if ((<ValueObject>type).__dto_name) {
+        p[key] = {
+          $ref: '#/components/schemas/' + (<ValueObject>type).__dto_name,
+        };
+      } else {
+        let args: { [key: string]: any } = (<TypeIsObject>type).toSwagger?.();
+        if (!args) args = { type: String(type) };
+        args.description = property.comment;
+        p[key] = args;
+      }
+      return p;
+    }, {}),
+  };
+
   const map = (item: T) => {
     const o: any = item?.dataValues || item;
     return Object.keys(properties).reduce((p: { [key: string]: unknown }, key) => {

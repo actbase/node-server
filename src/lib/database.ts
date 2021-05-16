@@ -1,5 +1,5 @@
 import { DatabaseOption } from '../types';
-import { DataTypes, ModelStatic, Sequelize } from 'sequelize';
+import { DataTypes, Sequelize } from 'sequelize';
 import { Options } from 'sequelize/types/lib/sequelize';
 import {
   Model,
@@ -33,7 +33,7 @@ interface ModelPreference extends TypeIsDefine {
   onDelete?: string;
   validate?: ModelValidateOptions;
 
-  connectTo?: ModelStatic<Model>;
+  connectTo?: ModelCtor<Model>;
 }
 
 interface ModelExtraOptions extends ModelOptions {
