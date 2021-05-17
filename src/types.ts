@@ -30,6 +30,7 @@ export interface PageData {
 
 export interface ServerOption {
   port: number;
+  prefix?: string;
   auth: AuthOption;
   database: DatabaseOption;
   swagger: SwaggerOption;

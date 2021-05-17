@@ -6,8 +6,8 @@ import passport from 'passport';
 import http from 'http';
 import { ServerOption } from './types';
 import { dbAssociate, dbInit } from './lib/database';
-import { requestMapping } from './lib/controller';
 import swaggerHandler from './lib/swagger';
+import { installRoutes } from './lib/route';
 
 export const run = (dirname: string, options: ServerOption) => {
   const loadPath = async (path: string, subPath: string) => {
@@ -27,7 +27,7 @@ export const run = (dirname: string, options: ServerOption) => {
     await loadPath(dirname + '/app', '');
 
     await dbAssociate();
-    const controllers = await requestMapping(options.auth);
+    // const controllers = await requestMapping(options.auth);
 
     const app = express();
     app.use(cors());
@@ -46,9 +46,13 @@ export const run = (dirname: string, options: ServerOption) => {
       next();
     });
 
-    app.use('/v1', controllers.router);
+    if (options.prefix) {
+      app.use(`/${options.prefix}`, await installRoutes(options.auth));
+    } else {
+      app.use(await installRoutes(options.auth));
+    }
 
-    swaggerHandler(app, options.swagger, controllers.pages, controllers.definitions);
+    swaggerHandler(app, options.swagger);
 
     if (dbContainer) {
       //   app.use('/sync', async (req, res) => {

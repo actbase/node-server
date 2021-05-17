@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { AbstractDataType, AbstractDataTypeConstructor, BlobSize, TextLength } from 'sequelize/types/lib/data-types';
+import { ValueObject } from '../lib/dto';
 
 export interface TypeIsObject {
   __name: string;
@@ -31,7 +32,17 @@ export const TypeArray = (o: (...options: any) => TypeIsObject) => {
   });
 };
 
-export const TypePaging = (o: (...options: any) => TypeIsObject) => {
+export const TypePaging = (o: ((...options: any) => TypeIsObject) | ValueObject | TypeIsObject) => {
+  const items = (<ValueObject>o).__dto_name
+    ? {
+        $ref: '#/components/schemas/' + (<ValueObject>o)?.__dto_name,
+      }
+    : typeof o === 'function'
+    ? o().toSwagger()
+    : 'toSwagger' in o
+    ? o.toSwagger()
+    : {};
+
   return () => ({
     __name: 'paging',
     toSwagger: () => ({
@@ -63,7 +74,7 @@ export const TypePaging = (o: (...options: any) => TypeIsObject) => {
         },
         items: {
           type: 'array',
-          items: o().toSwagger(),
+          items,
         },
       },
     }),

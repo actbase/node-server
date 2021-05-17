@@ -2,6 +2,9 @@
 import { TypeIs, TypeIsDefine } from '../contants/TypeIs';
 import { ValueObject } from './dto';
 import { AuthOption, ControllerOption } from '../types';
+import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
+import passport from 'passport';
+import express from 'express';
 
 // interface AppUser {
 //   id?: number;
@@ -134,6 +137,20 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       });
     }
 
+    const requestBodyJson = {};
+    if (request.body) {
+      Object.keys(<RequestParam>request.body).forEach(key => {
+        const pref = (<RequestParam>request.body)?.[key];
+        const type = typeof pref?.type === 'function' ? pref?.type() : pref?.type;
+
+        // @ts-ignore
+        requestBodyJson[key] = {
+          ...type?.toSwagger(),
+          description: pref?.comment,
+        };
+      });
+    }
+
     const response = typeof request.response === 'function' ? request.response() : request.response;
     config.swaggers.push({
       operationId: request.method + ':' + request.uri,
@@ -142,6 +159,18 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       tags: options.tags,
       summary: options.summary,
       description: options.description,
+      requestBody: {
+        content: {
+          'application/json': !requestBodyJson
+            ? undefined
+            : {
+                schema: {
+                  type: 'object',
+                  properties: requestBodyJson,
+                },
+              },
+        },
+      },
       parameters,
       response,
       data: {
@@ -155,8 +184,51 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
   }
 };
 
-export const getSwaggerData = () => {
-  const definitions: { [key: string]: any } = {};
+export const installRoutes = async (options: AuthOption) => {
+  config.auth = options;
+  if (options) {
+    const jwt_config = {
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: options.jwt_secret,
+    };
 
-  console.log(definitions);
+    passport.use(
+      'jwt',
+      new JwtStrategy(jwt_config, async (jwtPayload, done) => {
+        try {
+          done(null, await options.handler?.(jwtPayload));
+        } catch (e) {
+          done(e);
+        }
+      }),
+    );
+  }
+
+  const router = express.Router();
+  router.use(function(_req, res, next) {
+    res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS');
+    res.header('Access-Control-Allow-Origin', '*');
+    next();
+  });
+
+  router.all('/*', function(_req, res, next) {
+    res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With');
+    next();
+  });
+
+  config.pages.sort((a, b) => (a.size > b.size ? 1 : a.size < b.size ? -1 : 0));
+  for (const page of config.pages) {
+    console.log(page);
+  }
+
+  // 커스텀 404 페이지
+  router.use((_req, res) => {
+    res.type('text/plain');
+    res.status(404);
+    res.send('404 - Not Found');
+  });
+
+  return router;
 };

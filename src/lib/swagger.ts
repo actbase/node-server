@@ -9,7 +9,7 @@ const swagger = require('../../assets/swagger-data.json');
 
 const methods = ['get', 'post', 'put', 'delete'];
 
-const swaggerHandler = (app: express.Express, options: SwaggerOption, _pages: any, _definitions?: any[]) => {
+const swaggerHandler = (app: express.Express, options: SwaggerOption) => {
   const dto = getDtoDefinitions();
   Object.keys(dto).map(key => {
     swagger.components.schemas[key] = dto[key];
@@ -41,12 +41,11 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption, _pages: an
   pages.forEach((v: SwaggerData) => {
     if (!swagger.paths[v.path.path]) swagger.paths[v.path.path] = {};
 
-    let resultData = {};
+    let resultData = undefined;
 
     if ((<ValueObject>v.response)?.__dto_name) {
-      resultData = { schema: { $ref: '#/components/schemas/' + (<ValueObject>v.response)?.__dto_name } };
+      resultData = { $ref: '#/components/schemas/' + (<ValueObject>v.response)?.__dto_name };
     } else {
-      console.log(v.response);
       // @ts-ignore
       const t1 = <TypeIsObject>v.response;
       // @ts-ignore
@@ -67,9 +66,11 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption, _pages: an
       responses: {
         200: {
           description: 'OK',
-          content: {
-            'application/json': resultData,
-          },
+          content: !resultData
+            ? undefined
+            : {
+                'application/json': { schema: resultData },
+              },
         },
       },
     };
