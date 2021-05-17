@@ -1,4 +1,3 @@
-// import { DTOObject } from '../types';
 import { TypeIs, TypeIsDefine } from '../contants/TypeIs';
 import { ValueObject } from './dto';
 import { AuthOption, ControllerOption } from '../types';
@@ -29,6 +28,7 @@ export interface RouteRequest {
   roles?: string[];
   query?: RequestParam;
   body?: RequestParam | ValueObject;
+  formdata?: boolean;
   response?: ValueObject | (() => ValueObject) | TypeIsDefine | (() => TypeIsDefine);
 }
 
@@ -42,7 +42,7 @@ export interface RouteOption {
 interface ExecuteArgs {
   path?: { [key: string]: unknown };
   query?: { [key: string]: unknown };
-  body?: { [key: string]: unknown };
+  body: { [key: string]: unknown };
   files?: { [key: string]: unknown };
   user?: AppUser;
 }
@@ -114,7 +114,7 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       Object.keys(path.items).forEach(name => {
         const t = path.items?.[name].type;
         const t1 = typeof t === 'function' ? t() : t;
-        const t2 = typeof t1 === 'object' ? t1?.toSwagger() : t1;
+        const t2 = typeof t1 === 'object' && 'toSwagger' in t1 ? t1?.toSwagger() : t1;
         parameters.push({
           name,
           ...t2,
@@ -129,7 +129,7 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       Object.keys(request.query).forEach(name => {
         const t = request.query?.[name].type;
         const t1 = typeof t === 'function' ? t() : t;
-        const t2 = typeof t1 === 'string' ? t1 : t1?.toSwagger();
+        const t2 = !(typeof t1 === 'object' && 'toSwagger' in t1) || typeof t1 === 'string' ? t1 : t1?.toSwagger();
         parameters.push({
           name,
           ...t2,
@@ -140,15 +140,6 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
     }
 
     if (options.paging) {
-      // page: {
-      //   type: TypeIs.INT,
-      //     comment: '페이지',
-      // },
-      // limit: {
-      //   type: TypeIs.INT,
-      //     comment: '페이지당 사이즈',
-      // },
-      //
       parameters.push({
         name: 'page',
         ...TypeIs.INT().toSwagger(),
@@ -187,16 +178,33 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       Object.keys(<RequestParam>request.body).forEach(key => {
         const pref = (<RequestParam>request.body)?.[key];
         const type = typeof pref?.type === 'function' ? pref?.type() : pref?.type;
-
-        // @ts-ignore
-        requestBodyJson[key] = {
-          ...type?.toSwagger(),
-          description: pref?.comment,
-        };
+        if ('toSwagger' in type) {
+          // @ts-ignore
+          requestBodyJson[key] = {
+            ...type?.toSwagger(),
+            description: pref?.comment,
+          };
+        }
       });
     }
 
     const response = typeof request.response === 'function' ? request.response() : request.response;
+
+    let requestBody = undefined;
+    if (Object.keys(requestBodyJson || {}).length) {
+      const label = request.formdata ? 'multipart/form-data' : 'application/json';
+      requestBody = {
+        content: {
+          [label]: {
+            schema: {
+              type: 'object',
+              properties: requestBodyJson,
+            },
+          },
+        },
+      };
+    }
+
     config.swaggers.push({
       operationId: request.method + ':' + path.path,
       path,
@@ -204,19 +212,7 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       tags: options.tags,
       summary: options.summary,
       description: options.description,
-      requestBody:
-        Object.keys(requestBodyJson || {}).length === 0
-          ? undefined
-          : {
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: requestBodyJson,
-                  },
-                },
-              },
-            },
+      requestBody,
       parameters,
       response,
       data: {
@@ -228,6 +224,8 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       },
     });
   }
+
+  return {};
 };
 
 export const getJwtToken = async (req: express.Request, user: object, refreshPayload: object) => {
@@ -323,9 +321,20 @@ export const installRoutes = async (options: AuthOption) => {
             files: req.files,
             query: req.query,
             path: req.params,
-            body: req?.body,
+            body: {},
             user,
           };
+
+          const bodyFields = !!request?.body?.__dto_name ? request.body.properties : request?.body;
+          for (const key of Object.keys(req?.body)) {
+            const field = (<RequestParam>bodyFields)[key];
+            const type = !field ? undefined : typeof field.type === 'function' ? field.type() : field.type;
+            if (type && '__dto_name' in type) {
+              args.body[key] = req.body?.[key];
+            } else if (type) {
+              args.body[key] = type.fixValue ? type.fixValue(req.body?.[key]) : req.body?.[key];
+            }
+          }
 
           if (request?.roles && request.roles.length > 0 && !request.roles.includes('any')) {
             const user_roles = user?.roles?.map(v => v.toLowerCase()) || [];

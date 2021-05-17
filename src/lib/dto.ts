@@ -1,9 +1,8 @@
 import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
-import { TypeIsObject } from '../contants/TypeIs';
+import { DataType, TypeIsDefine, TypeIsObject, ValueObjectDefault } from '../contants/TypeIs';
 import { literal } from 'sequelize';
 
-export interface ValueObject {
-  __dto_name: string;
+export interface ValueObject extends ValueObjectDefault {
   defineModel?: ModelCtor<any>;
   map: (o: any) => any;
   collect: (o: any[]) => any[];
@@ -11,7 +10,7 @@ export interface ValueObject {
 }
 
 export interface VOProperties {
-  type: TypeIsObject | (() => TypeIsObject) | ValueObject;
+  type: DataType;
   comment?: string;
   defaultValue?: unknown;
 
@@ -82,10 +81,19 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     }, {});
   };
 
+  const outProperties = Object.keys(properties).reduce((p: { [key: string]: TypeIsDefine }, key) => {
+    p[key] = {
+      // @ts-ignore
+      type: properties[key].type,
+    };
+    return p;
+  }, {});
+
   const ATTRS = Object.keys(entity?.defineModel?.rawAttributes || {});
   return {
     __dto_name: name,
     defineModel: entity?.defineModel,
+    properties: outProperties,
     map,
     collect: (o: any) => o?.map((v: any) => map(v)),
     middleware: (options, user) => {
@@ -97,7 +105,7 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
           return x;
         }
 
-        if ((<ValueObject>property.type)?.__dto_name) {
+        if ('__dto_name' in property.type) {
           const dto = <ValueObject>property.type;
           if (!options.include) options.include = [];
           options.include.push(dto.middleware({ model: dto.defineModel }, user));

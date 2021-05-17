@@ -9,7 +9,7 @@ import {
   ModelOptions,
   ModelValidateOptions,
 } from 'sequelize/types/lib/model';
-import { TypeIsDefine } from '../contants/TypeIs';
+import { TypeIs, TypeIsDefine } from '../contants/TypeIs';
 
 interface ConfigSpec {
   container?: Sequelize;
@@ -75,7 +75,7 @@ export const createModel = (
 
     _column[key] = {
       ...column,
-      type: type.toSequelize(),
+      type: ('__dto_name' in type ? TypeIs.JSON() : type).toSequelize(),
       allowNull: !column.required,
     };
   });

@@ -1,6 +1,6 @@
-import { DTOObject } from '../types';
 import { getSequelize } from './database';
 import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
+import { ValueObject } from './dto';
 
 export type RepoFn = {
   findAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<T[]>;
@@ -62,9 +62,8 @@ export const pagingResponseParse = (
 
 export interface GetObjectArgs extends FindAndCountOptions {
   pagable?: any;
-  exportTo?: DTOObject;
+  exportTo?: ValueObject;
   user?: any;
-  fields?: string;
 }
 
 const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
@@ -108,12 +107,10 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           const page = pagingRequestParse(args.pagable);
           const target = args.exportTo;
           const user = args.user;
-          const fields = args.fields;
 
           delete args.pagable;
           delete args.exportTo;
           delete args.user;
-          delete args.fields;
 
           if (isPaging) {
             const output = await model.findAndCountAll(
@@ -125,7 +122,6 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
                   order: [[page.sort, page.dir]],
                 },
                 user,
-                fields,
               ) || {
                 ...args,
                 limit: page.limit,
@@ -142,7 +138,6 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
                   order: [['created_at', 'desc']],
                 },
                 user,
-                fields,
               ),
             );
             return target?.collect(output);

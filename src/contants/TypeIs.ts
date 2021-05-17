@@ -1,6 +1,11 @@
 import { DataTypes } from 'sequelize';
 import { AbstractDataType, AbstractDataTypeConstructor, BlobSize, TextLength } from 'sequelize/types/lib/data-types';
-import { ValueObject } from '../lib/dto';
+import { RequestParam } from '../lib/route';
+
+export interface ValueObjectDefault {
+  __dto_name: string;
+  properties: RequestParam;
+}
 
 export interface TypeIsObject {
   __name: string;
@@ -14,8 +19,10 @@ export interface TypeIsObject {
   fixValue?: (data: any) => unknown;
 }
 
+export type DataType = TypeIsObject | (() => TypeIsObject) | ValueObjectDefault;
+
 export interface TypeIsDefine {
-  type: TypeIsObject | (() => TypeIsObject);
+  type: DataType;
   comment?: string;
   defaultValue?: unknown;
   required?: boolean;
@@ -32,16 +39,17 @@ export const TypeArray = (o: (...options: any) => TypeIsObject) => {
   });
 };
 
-export const TypePaging = (o: ((...options: any) => TypeIsObject) | ValueObject | TypeIsObject) => {
-  const items = (<ValueObject>o).__dto_name
-    ? {
-        $ref: '#/components/schemas/' + (<ValueObject>o)?.__dto_name,
-      }
-    : typeof o === 'function'
-    ? o().toSwagger()
-    : 'toSwagger' in o
-    ? o.toSwagger()
-    : {};
+export const TypePaging = (o: DataType) => {
+  const items =
+    '__dto_name' in o
+      ? {
+          $ref: '#/components/schemas/' + o.__dto_name,
+        }
+      : typeof o === 'function'
+      ? o().toSwagger()
+      : 'toSwagger' in o
+      ? o.toSwagger()
+      : {};
 
   return () => ({
     __name: 'paging',
