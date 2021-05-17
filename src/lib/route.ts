@@ -317,6 +317,9 @@ export const installRoutes = async (options: AuthOption) => {
       } else {
         try {
           const user: AppUser = <AppUser>req.user;
+          if (typeof user.roles === 'string') {
+            user.roles = JSON.parse(user.roles);
+          }
           const args: ExecuteArgs = {
             files: req.files,
             query: req.query,
@@ -324,6 +327,8 @@ export const installRoutes = async (options: AuthOption) => {
             body: {},
             user,
           };
+
+          console.log('req user', user, req.user);
 
           const bodyFields = !!request?.body?.__dto_name ? request.body.properties : request?.body;
           for (const key of Object.keys(req?.body)) {
