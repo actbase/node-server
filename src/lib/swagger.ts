@@ -9,7 +9,7 @@ const swagger = require('../../assets/swagger-data.json');
 
 const methods = ['get', 'post', 'put', 'delete'];
 
-const swaggerHandler = (app: express.Express, options: SwaggerOption) => {
+const swaggerHandler = (app: express.Express, options: SwaggerOption, prefix?: string) => {
   const dto = getDtoDefinitions();
   Object.keys(dto).map(key => {
     swagger.components.schemas[key] = dto[key];
@@ -61,7 +61,6 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption) => {
       summary: v.summary,
       description: v.description,
       parameters: v.parameters,
-      //   requestBody?: { [key: string]: any };
       requestBody: v.requestBody,
       responses: {
         200: {
@@ -91,7 +90,7 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption) => {
   app.use('/api-docs', (req: express.Request, res: express.Response) => {
     swagger.servers = [
       {
-        url: `${options.scheme}://${options.host || req.headers.host}/v1`,
+        url: `${options.scheme}://${options.host || req.headers.host}${prefix ? `/${prefix}` : ''}`,
       },
     ];
     return res.status(200).json(swagger);

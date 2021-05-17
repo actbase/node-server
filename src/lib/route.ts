@@ -4,12 +4,13 @@ import { ValueObject } from './dto';
 import { AuthOption, ControllerOption } from '../types';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import passport from 'passport';
-import express from 'express';
+import express, { NextFunction } from 'express';
+import * as jwt from 'jsonwebtoken';
 
-// interface AppUser {
-//   id?: number;
-//   roles?: string[];
-// }
+interface AppUser extends Express.User {
+  id?: number;
+  roles?: string[];
+}
 
 export interface RequestParam {
   [key: string]: TypeIsDefine;
@@ -38,15 +39,15 @@ export interface RouteOption {
 }
 
 interface ExecuteArgs {
-  path: { [key: string]: unknown };
-  query: { [key: string]: unknown };
-  body: { [key: string]: unknown };
-  user: { [key: string]: unknown };
+  path?: { [key: string]: unknown };
+  query?: { [key: string]: unknown };
+  body?: { [key: string]: unknown };
+  files?: { [key: string]: unknown };
+  user?: AppUser;
 }
 
-type ExecuteFunction =
-  | ((args: ExecuteArgs) => Promise<unknown> | unknown)
-  | ((req: any, res: any, next: any) => Promise<unknown> | unknown | void);
+type ExecuteFunction = ((args: ExecuteArgs) => Promise<unknown> | unknown) &
+  ((req: any, res: any, next: any) => Promise<unknown> | unknown | void);
 
 interface ConfigSpec {
   pages: {
@@ -153,24 +154,25 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
 
     const response = typeof request.response === 'function' ? request.response() : request.response;
     config.swaggers.push({
-      operationId: request.method + ':' + request.uri,
+      operationId: request.method + ':' + path.path,
       path,
       method: request.method,
       tags: options.tags,
       summary: options.summary,
       description: options.description,
-      requestBody: {
-        content: {
-          'application/json': !requestBodyJson
-            ? undefined
-            : {
-                schema: {
-                  type: 'object',
-                  properties: requestBodyJson,
+      requestBody:
+        Object.keys(requestBodyJson || {}).length === 0
+          ? undefined
+          : {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: requestBodyJson,
+                  },
                 },
               },
-        },
-      },
+            },
       parameters,
       response,
       data: {
@@ -182,6 +184,31 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
       },
     });
   }
+};
+
+export const getJwtToken = async (req: express.Request, user: object, refreshPayload: object) => {
+  return new Promise((resolve, reject) => {
+    req.login(user, { session: false }, err => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const expires_in = config.auth?.jwt_expiration || -1;
+      const options = {
+        expiresIn: (expires_in || 0) > 0 ? expires_in : '30d',
+      };
+
+      const access_token = jwt.sign(user, config.auth?.jwt_secret || 'defkey', options);
+      const refresh_token = jwt.sign(refreshPayload, config.auth?.jwt_secret || 'defkey');
+
+      resolve({
+        access_token,
+        expires_in,
+        refresh_token,
+        token_type: 'bearer',
+      });
+    });
+  });
 };
 
 export const installRoutes = async (options: AuthOption) => {
@@ -220,7 +247,104 @@ export const installRoutes = async (options: AuthOption) => {
 
   config.pages.sort((a, b) => (a.size > b.size ? 1 : a.size < b.size ? -1 : 0));
   for (const page of config.pages) {
-    console.log(page);
+    const { execute, request } = page;
+
+    let route_uri = String('object' === typeof request?.uri ? request?.uri.path : request?.uri);
+    route_uri = route_uri.replace(/\{([a-zA-Z0-9\_]+)\}/g, ':$1');
+
+    const method: string = request?.method?.toLowerCase() || 'get';
+
+    const handlePrepare = (req: express.Request, res: express.Response, next: NextFunction) => {
+      req.user = undefined;
+      try {
+        const fn = passport.authenticate('jwt', { session: false }, async (err, user) => {
+          req.user = undefined;
+          if (!err) req.user = user || undefined;
+          next();
+        });
+        fn(req, res, next);
+      } catch (e) {
+        console.warn(e);
+        next();
+      }
+    };
+
+    const handleExecute = async (req: express.Request, res: express.Response, next: NextFunction) => {
+      if (!execute) {
+        res.status(404).json({ message: 'not define execute..' });
+      } else {
+        try {
+          const user: AppUser = <AppUser>req.user;
+          const args: ExecuteArgs = {
+            files: req.files,
+            query: req.query,
+            path: req.params,
+            body: req?.body,
+            user,
+          };
+
+          if (request?.roles && request.roles.length > 0 && !request.roles.includes('any')) {
+            const user_roles = user?.roles?.map(v => v.toLowerCase()) || [];
+            let success = false;
+            for (const sec of request.roles) {
+              if (sec.indexOf(':') >= 0) {
+                const cmd = sec.substring(sec.indexOf(':') + 1);
+                const validate = Function('params', 'user', `return (${cmd})`);
+
+                const result = validate({ ...args.path, ...args.query }, req.user);
+                if (result) {
+                  success = true;
+                  break;
+                }
+              } else if (user_roles.includes(sec?.toLowerCase())) {
+                success = true;
+              }
+            }
+
+            if (!success) {
+              throw {
+                status: 401,
+                message: 'Required Permissions..',
+                data: request.roles,
+              };
+            }
+          }
+
+          if (execute.length >= 3) {
+            return await execute(req, res, next);
+          } else {
+            const output = await execute(args); //{ ...args, user: req.user });
+            res.status(200).json(output);
+          }
+        } catch (e) {
+          if (e?.status === 301) {
+            res.redirect(301, e.location);
+          } else if (e?.status) {
+            res.status(e?.status).json({ message: e?.message, data: e?.data });
+          } else {
+            if (!e?.status) {
+              console.warn('>>> ', route_uri);
+              console.warn(e);
+            }
+            res
+              .status(e?.status || 500)
+              .json({ uri: route_uri, message: e?.message, data: e?.data || JSON.stringify(e) });
+          }
+        }
+      }
+    };
+
+    if (method === 'post') {
+      router.post(route_uri, handlePrepare, handleExecute);
+    } else if (method === 'put') {
+      router.put(route_uri, handlePrepare, handleExecute);
+    } else if (method === 'delete') {
+      router.delete(route_uri, handlePrepare, handleExecute);
+    } else if (method === 'get') {
+      router.get(route_uri, handlePrepare, handleExecute);
+    } else {
+      router.all(route_uri, handlePrepare, handleExecute);
+    }
   }
 
   // 커스텀 404 페이지

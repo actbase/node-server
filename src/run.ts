@@ -52,7 +52,7 @@ export const run = (dirname: string, options: ServerOption) => {
       app.use(await installRoutes(options.auth));
     }
 
-    swaggerHandler(app, options.swagger);
+    swaggerHandler(app, options.swagger, options.prefix);
 
     if (dbContainer) {
       //   app.use('/sync', async (req, res) => {
@@ -74,7 +74,7 @@ export const run = (dirname: string, options: ServerOption) => {
     app.use('/', (_req, res) => {
       res.type('text/plain');
       res.status(200);
-      res.send('chadu-serv');
+      res.send(options.swagger.name || '@actbase/node-server');
     });
 
     app.use((_req, res) => {
