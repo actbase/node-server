@@ -317,7 +317,7 @@ export const installRoutes = async (options: AuthOption) => {
       } else {
         try {
           const user: AppUser = <AppUser>req.user;
-          if (typeof user.roles === 'string') {
+          if (user?.roles && typeof user.roles === 'string') {
             user.roles = JSON.parse(user.roles);
           }
           const args: ExecuteArgs = {
