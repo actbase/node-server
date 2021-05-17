@@ -36,6 +36,7 @@ export interface RouteOption {
   tags?: string[];
   summary?: string;
   description?: string;
+  paging?: 'sort' | 'page' | true | false;
 }
 
 interface ExecuteArgs {
@@ -136,6 +137,49 @@ export const createRoute = (request: RouteRequest, execute: ExecuteFunction, opt
           description: request.query?.[name].comment,
         });
       });
+    }
+
+    if (options.paging) {
+      // page: {
+      //   type: TypeIs.INT,
+      //     comment: '페이지',
+      // },
+      // limit: {
+      //   type: TypeIs.INT,
+      //     comment: '페이지당 사이즈',
+      // },
+      //
+      parameters.push({
+        name: 'page',
+        ...TypeIs.INT().toSwagger(),
+        in: 'query',
+        description: '표시할 Page',
+        example: 0,
+      });
+
+      parameters.push({
+        name: 'limit',
+        ...TypeIs.INT().toSwagger(),
+        in: 'query',
+        description: '한 페이지당 표시 갯수',
+        example: 20,
+      });
+
+      if ([true, 'sort'].includes(options.paging)) {
+        parameters.push({
+          name: 'sort',
+          ...TypeIs.STRING().toSwagger(),
+          in: 'query',
+          description: '정렬필드',
+        });
+
+        parameters.push({
+          name: 'dir',
+          ...TypeIs.ENUM('desc', 'asc').toSwagger(),
+          in: 'query',
+          description: '정렬방식',
+        });
+      }
     }
 
     const requestBodyJson = {};

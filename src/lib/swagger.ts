@@ -55,7 +55,7 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption, prefix?: s
       }
     }
 
-    swagger.paths[v.path.path][v.method] = {
+    swagger.paths[v.path.path][v.method?.toLowerCase()] = {
       tags: v.tags,
       operationId: v.operationId,
       summary: v.summary,
