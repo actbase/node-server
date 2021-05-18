@@ -55,20 +55,20 @@ export const run = (dirname: string, options: ServerOption) => {
     swaggerHandler(app, options.swagger, options.prefix);
 
     if (dbContainer) {
-      //   app.use('/sync', async (req, res) => {
-      //     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
-      //     if (['::1', 'localhost', '127.0.0.1', '::ffff:127.0.0.1'].includes(<string>ip)) {
-      //       await dbContainer.sync({ alter: { drop: false } });
-      //
-      //       res.type('text/plain');
-      //       res.status(200);
-      //       res.send('db-sync');
-      //     } else {
-      //       res.type('text/plain');
-      //       res.status(404);
-      //       res.send('404 - Not Found');
-      //     }
-      //   });
+      app.use('/sync', async (req, res) => {
+        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
+        if (['::1', 'localhost', '127.0.0.1', '::ffff:127.0.0.1'].includes(<string>ip)) {
+          await dbContainer.sync({ alter: { drop: false } });
+
+          res.type('text/plain');
+          res.status(200);
+          res.send('db-sync');
+        } else {
+          res.type('text/plain');
+          res.status(404);
+          res.send('404 - Not Found');
+        }
+      });
     }
 
     app.use('/', (_req, res) => {

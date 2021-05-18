@@ -80,11 +80,9 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
         findOne: (model, args) => {
           const target = args.exportTo;
           const user = args.user;
-          const fields = args.fields;
 
           delete args.exportTo;
           delete args.user;
-          delete args.fields;
 
           return model.findOne(
             !target
@@ -95,7 +93,6 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
                     transaction,
                   },
                   user,
-                  fields,
                 ),
           );
         },

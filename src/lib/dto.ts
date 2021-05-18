@@ -45,7 +45,6 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
   properties: { [key: string]: VOProperties },
   entity?: {
     defineModel?: ModelCtor<T>;
-    middleware?: (options: any, attrs: any, user: any, fields: any) => void;
   },
 ): ValueObject {
   config.definitions[name] = {
