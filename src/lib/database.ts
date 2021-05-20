@@ -102,6 +102,7 @@ export const createModel = (
     timestamps: false,
     charset: 'utf8mb4',
     collate: 'utf8mb4_general_ci',
+    underscored: true,
     ...options,
     tableName: name,
   });
