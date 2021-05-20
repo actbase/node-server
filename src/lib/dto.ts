@@ -13,8 +13,9 @@ export interface VOProperties {
   type: DataType;
   comment?: string;
   defaultValue?: unknown;
+  reference?: string;
 
-  query?: ((args: { user?: any }) => string) | string;
+  query?: ((args: { user?: any; association: string }) => string) | string;
   column?: string;
 }
 
@@ -73,6 +74,8 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
       let type = typeof property.type === 'function' ? property.type() : property.type;
       if ((<TypeIsObject>type)?.fixValue) {
         p[key] = (<TypeIsObject>type)?.fixValue?.(o[key]);
+      } else if (property.reference && (<ValueObject>type)?.__dto_name) {
+        p[key] = o[`__${property.reference}`] ? (<ValueObject>type)?.map(o[`__${property.reference}`]) : o[key];
       } else {
         p[key] = o[key];
       }
@@ -98,19 +101,26 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     middleware: (options, user) => {
       let attrs = Object.keys(properties).reduce((x: (string | object)[], y) => {
         const property = properties[y];
-        if (property.query) {
-          const query = 'function' === typeof property.query ? property.query({ user }) : property.query;
-          x.push([literal(query), y]);
-          return x;
-        }
+        if (property) {
+          if (property.query) {
+            const query =
+              'function' === typeof property.query
+                ? property.query({ user, association: options?.association || entity?.defineModel?.tableName || name })
+                : property.query;
+            x.push([literal(query), y]);
+            return x;
+          }
 
-        if ('__dto_name' in property.type) {
-          const dto = <ValueObject>property.type;
-          if (!options.include) options.include = [];
-          options.include.push(dto.middleware({ model: dto.defineModel }, user));
-        }
+          if (property.type && '__dto_name' in property.type) {
+            const dto = <ValueObject>property.type;
+            if (!options.include) options.include = [];
+            options.include.push(
+              dto.middleware({ model: dto.defineModel, association: `__${property?.reference || y}`, as: y }, user),
+            );
+          }
 
-        x.push(property.column || y);
+          x.push(property.column || y);
+        }
         return x;
       }, []);
       attrs = attrs.filter((item, index) => attrs.indexOf(item) === index);

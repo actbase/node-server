@@ -21,8 +21,8 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption, prefix?: s
 
   const pages = getPages();
   pages.sort((a: SwaggerData, b: SwaggerData) => {
-    const ix1 = methods.indexOf(a.method);
-    const ix2 = methods.indexOf(b.method);
+    const ix1 = methods.indexOf(a.method.toLowerCase());
+    const ix2 = methods.indexOf(b.method.toLowerCase());
     return (a.tags?.[0] || 0) > (b.tags?.[0] || 0)
       ? 1
       : (a.tags?.[0] || 0) < (b.tags?.[0] || 0)

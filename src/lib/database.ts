@@ -68,7 +68,7 @@ export const createModel = (
     const connectModel = column.connectTo;
     if (column.connectTo) {
       associates.push((o: any) => {
-        o?.belongsTo(connectModel, { foreignKey: key });
+        o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}` });
       });
       delete column.connectTo;
     }

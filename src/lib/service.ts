@@ -11,6 +11,7 @@ export type RepoFn = {
   getObjects: <T extends Model>(model: ModelCtor<T>, args: GetObjectArgs) => Promise<any>;
   save: <T extends Model>(model: T) => Promise<T>;
   destroy: <T extends Model>(model: T) => Promise<void>;
+  updateAll: <T extends Model>(model: ModelCtor<T>, values: { [key: string]: any }, args: any) => Promise<any>;
   destroyAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<any>;
 };
 
@@ -72,6 +73,9 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
     if (!sequlize) return;
 
     const transaction = await sequlize.transaction();
+    // console.log('transaction', transaction);
+    // console.log('transaction', typeof transaction);
+
     try {
       const repo: RepoFn = {
         findAll: (model, args) => {
@@ -154,6 +158,10 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
         },
         destroyAll: (model, args) => {
           return model.destroy({ ...args, transaction });
+        },
+        updateAll: (model, values, args) => {
+          // @ts-ignore
+          return model.update(values, { ...args, transaction });
         },
       };
       const output = await fn(repo, params);
