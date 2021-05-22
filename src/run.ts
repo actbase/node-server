@@ -30,7 +30,13 @@ export const run = (dirname: string, options: ServerOption) => {
     // const controllers = await requestMapping(options.auth);
 
     const app = express();
-    app.use(cors());
+    app.use(
+      cors({
+        origin: '*',
+        methods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS'],
+        credentials: true,
+      }),
+    );
     app.use(express.json({ limit: '500mb' }));
     app.use(express.urlencoded({ limit: '500mb', extended: false }));
     app.use(
@@ -40,11 +46,11 @@ export const run = (dirname: string, options: ServerOption) => {
     );
     app.use(fileUpload({}));
 
-    app.use(function(_req, res, next) {
-      res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS');
-      res.header('Access-Control-Allow-Origin', '*');
-      next();
-    });
+    // app.use(function(_req, res, next) {
+    //   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS');
+    //   res.header('Access-Control-Allow-Origin', '*');
+    //   next();
+    // });
 
     if (options.prefix) {
       app.use(`/${options.prefix}`, await installRoutes(options.auth));
