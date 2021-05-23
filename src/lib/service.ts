@@ -120,16 +120,17 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
                   ...args,
                   limit: page.limit,
                   offset: page.page * page.limit,
-                  order: [[page.sort, page.dir]],
+                  order: args.order || [[page.sort, page.dir]],
                 },
                 user,
               ) || {
                 ...args,
                 limit: page.limit,
                 offset: page.page * page.limit,
-                order: [[page.sort, page.dir]],
+                order: args.order || [[page.sort, page.dir]],
               },
             );
+            console.log('output', output.rows);
             return pagingResponseParse(page, output, target?.map || (o => o));
           } else {
             const output = await model.findAll(

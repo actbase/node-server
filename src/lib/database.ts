@@ -14,8 +14,8 @@ import { TypeIs, TypeIsDefine } from '../contants/TypeIs';
 interface ConfigSpec {
   container?: Sequelize;
   associates?: {
-    domain?: typeof Model;
-    associate: (domain: Model | undefined) => void;
+    domain?: ModelCtor<Model>;
+    associate: (domain: ModelCtor<Model> | undefined) => Promise<void> | void;
   }[];
 }
 
@@ -49,7 +49,7 @@ export const createModel = (
   options?: ModelExtraOptions,
 ): DBModel => {
   const _column: { [key: string]: ModelAttributeColumnOptions } = {};
-  const associates: ((o: any) => void)[] = [];
+  const associates: ((o: any) => Promise<void> | void)[] = [];
 
   if (options?.with?.includes('*') || options?.with?.includes('id')) {
     _column.id = {
@@ -66,11 +66,11 @@ export const createModel = (
     const type = 'function' === typeof column.type ? column.type() : column.type;
 
     const connectModel = column.connectTo;
-    if (column.connectTo) {
-      associates.push((o: any) => {
-        o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}` });
+    if (connectModel) {
+      associates.push(async (o: any) => {
+        await o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}` });
       });
-      delete column.connectTo;
+      column.connectTo = undefined;
     }
 
     _column[key] = {
@@ -140,15 +140,16 @@ export const dbInit = (options?: DatabaseOption) => {
     },
   };
   config.container = new Sequelize(options.scheme, options.username, options.password, args);
+  console.log('@node :: database initalize.');
   return config.container;
 };
 
-export const dbAssociate = () => {
-  if (!config.container) return;
-  config.associates?.forEach(v => {
-    // @ts-ignore
-    return v.associate(v.domain);
-  });
+export const dbAssociate = async () => {
+  if (!config.container || !config.associates) return;
+  for (const cmd of config.associates) {
+    await cmd.associate(cmd.domain);
+  }
+  console.log('@node :: associate end.');
 };
 
 export const getSequelize = (): Sequelize | undefined => {
