@@ -64,7 +64,7 @@ export const parseType = (
 ): { isDto?: boolean; typeIs?: TypeIsObject; dto?: ValueObject } => {
   if (!type) return {};
   const dataType = 'function' === typeof type ? (args ? type(...args) : type()) : type;
-  const isDto = '__dto_name' in dataType;
+  const isDto = typeof dataType === 'object' && '__dto_name' in dataType;
   return {
     isDto,
     typeIs: isDto ? undefined : <TypeIsObject>dataType,

@@ -1,6 +1,7 @@
 import { getSequelize } from './database';
 import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
 import { ValueObject } from './dto';
+import { Transaction } from 'sequelize';
 
 export type RepoFn = {
   findAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<T[]>;
@@ -15,7 +16,11 @@ export type RepoFn = {
   destroyAll: <T extends Model>(model: ModelCtor<T>, args: any) => Promise<any>;
 };
 
-export type ServiceMethodItem = (repo: RepoFn, args: unknown[]) => Promise<void>;
+export type ServiceMethodItem = (
+  repo: RepoFn,
+  args: unknown[],
+  options?: { transaction?: Transaction },
+) => Promise<void>;
 
 export type ServiceMethod<T> = {
   [P in keyof T]?: ServiceMethodItem;
@@ -72,10 +77,8 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
     const sequlize = getSequelize();
     if (!sequlize) return;
 
-    const transaction = await sequlize.transaction();
-    // console.log('transaction', transaction);
-    // console.log('transaction', typeof transaction);
-
+    const lastField = params.length > 0 && params[params.length - 1];
+    const transaction = lastField instanceof Transaction ? <Transaction>lastField : await sequlize.transaction();
     try {
       const repo: RepoFn = {
         findAll: (model, args) => {
@@ -165,7 +168,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           return model.update(values, { ...args, transaction });
         },
       };
-      const output = await fn(repo, params);
+      const output = await fn(repo, params, { transaction });
       await transaction.commit();
       return output;
     } catch (e) {
