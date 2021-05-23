@@ -72,7 +72,6 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     return Object.keys(properties).reduce((p: { [key: string]: unknown }, key) => {
       const property = properties[key];
       let type = typeof property.type === 'function' ? property.type() : property.type;
-      console.log('property', key, property, type);
       if ((<TypeIsObject>type)?.fixValue) {
         p[key] = (<TypeIsObject>type)?.fixValue?.(o[key]);
       } else if (property.reference && (<ValueObject>type)?.__dto_name) {

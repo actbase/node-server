@@ -136,7 +136,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
               target?.middleware(
                 {
                   ...args,
-                  order: [['created_at', 'desc']],
+                  order: args.order || [['created_at', 'desc']],
                 },
                 user,
               ),
