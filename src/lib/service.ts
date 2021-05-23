@@ -78,7 +78,8 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
     if (!sequlize) return;
 
     const lastField = params.length > 0 && params[params.length - 1];
-    const transaction = lastField instanceof Transaction ? <Transaction>lastField : await sequlize.transaction();
+    const isOutTransaction = lastField instanceof Transaction;
+    const transaction = isOutTransaction ? <Transaction>lastField : await sequlize.transaction();
     try {
       const repo: RepoFn = {
         findAll: (model, args) => {
@@ -169,10 +170,14 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
         },
       };
       const output = await fn(repo, params, { transaction });
-      await transaction.commit();
+      if (!isOutTransaction) {
+        await transaction.commit();
+      }
       return output;
     } catch (e) {
-      await transaction.rollback();
+      if (!isOutTransaction) {
+        await transaction.rollback();
+      }
       throw e;
     }
   };
