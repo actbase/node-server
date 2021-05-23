@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { AbstractDataType, AbstractDataTypeConstructor, BlobSize, TextLength } from 'sequelize/types/lib/data-types';
 import { RequestParam } from '../lib/route';
+import { parseType } from '../types';
 
 export interface ValueObjectDefault {
   __dto_name: string;
@@ -19,7 +20,11 @@ export interface TypeIsObject {
   fixValue?: (data: any) => unknown;
 }
 
-export type DataType = TypeIsObject | (() => TypeIsObject) | ValueObjectDefault;
+export type DataType =
+  | TypeIsObject
+  | (() => TypeIsObject)
+  | ((...options: unknown[]) => TypeIsObject)
+  | ValueObjectDefault;
 
 export interface TypeIsDefine {
   type: DataType;
@@ -28,15 +33,18 @@ export interface TypeIsDefine {
   required?: boolean;
 }
 
-export const TypeArray = (o: (...options: any) => TypeIsObject) => {
-  return (...x: any) => ({
-    __name: 'array',
-    toSwagger: () => ({
-      type: 'array',
-      items: o(...x).toSwagger(),
-    }),
-    toSequelize: () => DataTypes.JSON,
-  });
+export const TypeArray = (o: DataType): (() => TypeIsObject) => {
+  return (...x: any) => {
+    const tp = parseType(o, x);
+    return {
+      __name: 'array',
+      toSwagger: () => ({
+        type: 'array',
+        items: tp.isDto ? tp.dto?.properties : tp.typeIs?.toSwagger(),
+      }),
+      toSequelize: () => DataTypes.JSON,
+    };
+  };
 };
 
 export const TypePaging = (o: DataType) => {
@@ -98,6 +106,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.INTEGER(options),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return parseInt(String(o), 10);
     },
   }),
@@ -109,6 +118,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.INTEGER(options),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return parseInt(String(o), 10);
     },
   }),
@@ -120,6 +130,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.FLOAT(length, decimals),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return parseFloat(String(o));
     },
   }),
@@ -131,6 +142,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.DOUBLE(length, decimals),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return parseFloat(String(o));
     },
   }),
@@ -141,6 +153,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.STRING(length, binary),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return String(o);
     },
   }),
@@ -151,6 +164,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.TEXT({ length }),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return String(o);
     },
   }),
@@ -171,6 +185,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.ENUM(...texts),
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return texts.includes(String(o)) ? String(o) : undefined;
     },
   }),
@@ -204,6 +219,7 @@ export const TypeIs = {
     }),
     toSequelize: () => DataTypes.BOOLEAN,
     fixValue: o => {
+      if (o === undefined || o === null) return o;
       return String(o) === 'true' ? true : String(o) === 'false' ? false : !!o;
     },
   }),

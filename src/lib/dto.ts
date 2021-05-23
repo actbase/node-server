@@ -1,6 +1,7 @@
 import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model';
-import { DataType, TypeIsDefine, TypeIsObject, ValueObjectDefault } from '../contants/TypeIs';
+import { DataType, TypeIsDefine, ValueObjectDefault } from '../contants/TypeIs';
 import { literal } from 'sequelize';
+import { parseType } from '../types';
 
 export interface ValueObject extends ValueObjectDefault {
   defineModel?: ModelCtor<any>;
@@ -52,14 +53,14 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     type: 'object',
     properties: Object.keys(properties).reduce((p: { [key: string]: any }, key) => {
       const property = properties[key];
-      const type = 'function' === typeof property.type ? property.type() : property.type;
-      if ((<ValueObject>type).__dto_name) {
+      const tp = parseType(property.type);
+      if (tp.isDto) {
         p[key] = {
-          $ref: '#/components/schemas/' + (<ValueObject>type).__dto_name,
+          $ref: '#/components/schemas/' + tp.dto?.__dto_name,
         };
       } else {
-        let args: { [key: string]: any } = (<TypeIsObject>type).toSwagger?.();
-        if (!args) args = { type: String(type) };
+        let args: { [key: string]: any } = tp.typeIs?.toSwagger?.() || {};
+        if (!args) args = { type: String(tp.typeIs) };
         args.description = property.comment;
         p[key] = args;
       }
@@ -71,11 +72,13 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     const o: any = item?.dataValues || item;
     return Object.keys(properties).reduce((p: { [key: string]: unknown }, key) => {
       const property = properties[key];
-      let type = typeof property.type === 'function' ? property.type() : property.type;
-      if ((<TypeIsObject>type)?.fixValue) {
-        p[key] = (<TypeIsObject>type)?.fixValue?.(o[key]);
-      } else if (property.reference && (<ValueObject>type)?.__dto_name) {
-        p[key] = o[`__${property.reference}`] ? (<ValueObject>type)?.map(o[`__${property.reference}`]) : o[key];
+      const tp = parseType(property.type);
+
+      if (tp.isDto) {
+        const k = `__${property.reference}`;
+        p[key] = o[k] ? tp.dto?.map(o[k]) : tp.dto?.map(o[key]) || o[key];
+      } else if (tp.typeIs?.fixValue) {
+        p[key] = tp.typeIs?.fixValue(o[key]);
       } else {
         p[key] = o[key];
       }
@@ -103,33 +106,30 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
         const property = properties[y];
         if (property) {
           if (property.query) {
-            const query =
-              'function' === typeof property.query
-                ? property.query({ user, association: options?.association || entity?.defineModel?.tableName || name })
-                : property.query;
+            const association = options?.association || entity?.defineModel?.tableName || name;
+            const query = 'function' === typeof property.query ? property.query({ user, association }) : property.query;
             x.push([literal(query), y]);
             return x;
           }
 
-          if (property.type && '__dto_name' in property.type) {
-            const dto = <ValueObject>property.type;
+          const tp = parseType(property.type);
+          if (tp.isDto) {
             if (!options.include) options.include = [];
             options.include.push(
-              dto.middleware({ model: dto.defineModel, association: `__${property?.reference || y}`, as: y }, user),
+              tp.dto?.middleware(
+                { model: tp.dto?.defineModel, association: `__${property?.reference || y}`, as: y },
+                user,
+              ),
             );
           }
-
           x.push(property.column || y);
         }
         return x;
       }, []);
       attrs = attrs.filter((item, index) => attrs.indexOf(item) === index);
 
-      // entity?.middleware?.(options, attrs, user, fields);
-
       if (!options.attributes) options.attributes = [];
       options.attributes = options.attributes.concat(attrs.filter(v => typeof v === 'object' || ATTRS.includes(v)));
-
       return options;
     },
   };

@@ -1,4 +1,7 @@
 // @ts-ignore
+import { DataType, TypeIsObject, ValueObjectDefault } from './contants/TypeIs';
+import { ValueObject } from './lib/dto';
+
 export type AsyncFunction<A, O> = (args: A) => Promise<O>;
 
 export interface PageData {
@@ -54,3 +57,17 @@ export interface ControllerOption {
   summary?: string;
   description?: string;
 }
+
+export const parseType = (
+  type: DataType | undefined,
+  args?: unknown[],
+): { isDto?: boolean; typeIs?: TypeIsObject; dto?: ValueObject } => {
+  if (!type) return {};
+  const dataType = 'function' === typeof type ? (args ? type(...args) : type()) : type;
+  const isDto = '__dto_name' in dataType;
+  return {
+    isDto,
+    typeIs: isDto ? undefined : <TypeIsObject>dataType,
+    dto: isDto ? <ValueObject>dataType : undefined, //
+  };
+};

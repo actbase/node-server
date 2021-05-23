@@ -67,8 +67,8 @@ export const createModel = (
 
     const connectModel = column.connectTo;
     if (connectModel) {
-      associates.push(async (o: any) => {
-        await o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}` });
+      associates.push(async (o?: ModelCtor<Model>) => {
+        await o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}`, onDelete: 'CASCADE' });
       });
       column.connectTo = undefined;
     }
@@ -147,7 +147,11 @@ export const dbInit = (options?: DatabaseOption) => {
 export const dbAssociate = async () => {
   if (!config.container || !config.associates) return;
   for (const cmd of config.associates) {
-    await cmd.associate(cmd.domain);
+    try {
+      await cmd.associate?.(cmd.domain);
+    } catch (e) {
+      console.warn(e);
+    }
   }
   console.log('@node :: associate end.');
 };

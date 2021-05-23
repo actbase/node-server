@@ -1,6 +1,6 @@
 import { TypeIs, TypeIsDefine } from '../contants/TypeIs';
 import { ValueObject } from './dto';
-import { AuthOption, ControllerOption } from '../types';
+import { AuthOption, ControllerOption, parseType } from '../types';
 import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import passport from 'passport';
 import express, { NextFunction } from 'express';
@@ -41,7 +41,7 @@ export interface RouteOption {
 
 interface ExecuteArgs {
   path?: { [key: string]: unknown };
-  query?: { [key: string]: unknown };
+  query: { [key: string]: unknown };
   body: { [key: string]: unknown };
   files?: { [key: string]: unknown };
   user?: AppUser;
@@ -322,22 +322,31 @@ export const installRoutes = async (options: AuthOption) => {
           }
           const args: ExecuteArgs = {
             files: req.files,
-            query: req.query,
+            query: {},
             path: req.params,
             body: {},
             user,
           };
 
-          console.log('req user', user, req.user);
+          const queryFields = request?.query;
+          for (const key of Object.keys(req?.query)) {
+            const field = (<RequestParam>queryFields)[key];
+            const tp = parseType(field?.type);
+            if (tp.isDto) {
+              args.query[key] = tp.dto?.map(req.body?.[key]);
+            } else if (tp.typeIs) {
+              args.query[key] = tp.typeIs?.fixValue ? tp.typeIs.fixValue(req.body?.[key]) : req.body?.[key];
+            }
+          }
 
           const bodyFields = !!request?.body?.__dto_name ? request.body.properties : request?.body;
           for (const key of Object.keys(req?.body)) {
             const field = (<RequestParam>bodyFields)[key];
-            const type = !field ? undefined : typeof field.type === 'function' ? field.type() : field.type;
-            if (type && '__dto_name' in type) {
-              args.body[key] = req.body?.[key];
-            } else if (type) {
-              args.body[key] = type.fixValue ? type.fixValue(req.body?.[key]) : req.body?.[key];
+            const tp = parseType(field?.type);
+            if (tp.isDto) {
+              args.body[key] = tp.dto?.map(req.body?.[key]);
+            } else if (tp.typeIs) {
+              args.body[key] = tp.typeIs?.fixValue ? tp.typeIs.fixValue(req.body?.[key]) : req.body?.[key];
             }
           }
 
