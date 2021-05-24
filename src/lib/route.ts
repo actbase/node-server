@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import passport from 'passport';
 import express, { NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
+import moment from 'moment';
 
 interface AppUser extends Express.User {
   id?: number;
@@ -235,17 +236,16 @@ export const getJwtToken = async (req: express.Request, user: object, refreshPay
         reject(err);
         return;
       }
-      const expires_in = config.auth?.jwt_expiration || -1;
+      const expires_in = config.auth?.jwt_expiration || 30 * 24 * 60 * 60;
       const options = {
-        expiresIn: (expires_in || 0) > 0 ? expires_in : '30d',
+        expiresIn: ((expires_in || 0) > 0 ? expires_in : 30 * 24 * 60 * 60) * 100,
       };
 
       const access_token = jwt.sign(user, config.auth?.jwt_secret || 'defkey', options);
       const refresh_token = jwt.sign(refreshPayload, config.auth?.jwt_secret || 'defkey');
-
       resolve({
         access_token,
-        expires_in,
+        expires_at: moment().unix() + expires_in,
         refresh_token,
         token_type: 'bearer',
       });
@@ -330,12 +330,14 @@ export const installRoutes = async (options: AuthOption) => {
 
           const queryFields = request?.query;
           for (const key of Object.keys(req?.query)) {
-            const field = (<RequestParam>queryFields)[key];
+            const field = (<RequestParam>queryFields)?.[key];
             const tp = parseType(field?.type);
             if (tp.isDto) {
-              args.query[key] = tp.dto?.map(req.body?.[key]);
+              args.query[key] = tp.dto?.map(req.query?.[key]);
             } else if (tp.typeIs) {
-              args.query[key] = tp.typeIs?.fixValue ? tp.typeIs.fixValue(req.body?.[key]) : req.body?.[key];
+              args.query[key] = tp.typeIs?.fixValue ? tp.typeIs.fixValue(req.query?.[key]) : req.query?.[key];
+            } else if (['page', 'limit', 'sort', 'dir'].includes(key)) {
+              args.query[key] = req.query?.[key];
             }
           }
 

@@ -134,7 +134,6 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
                 order: args.order || [[page.sort, page.dir]],
               },
             );
-            console.log('output', output.rows);
             return pagingResponseParse(page, output, target?.map || (o => o));
           } else {
             const output = await model.findAll(

@@ -74,13 +74,13 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
       const property = properties[key];
       const tp = parseType(property.type);
 
-      if (tp.isDto) {
+      if (tp?.isDto) {
         const k = `__${property.reference}`;
         p[key] = o[k] ? tp.dto?.map(o[k]) : tp.dto?.map(o[key]) || o[key];
-      } else if (tp.typeIs?.fixValue) {
-        p[key] = tp.typeIs?.fixValue(o[key]);
+      } else if (tp?.typeIs?.fixValue) {
+        p[key] = tp?.typeIs?.fixValue(o?.[key]);
       } else {
-        p[key] = o[key];
+        p[key] = o?.[key];
       }
       return p;
     }, {});
