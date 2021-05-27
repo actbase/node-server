@@ -99,6 +99,22 @@ export const run = (dirname: string, options: ServerOption) => {
       server.listen(port, () => {
         console.log(`Server is running on ${port} port.  http://localhost:${port}`);
       });
+
+      if (options.socket) {
+        const io = require('socket.io')(server);
+        if (options.socket.adapter) {
+          io.adapter(options.socket.adapter);
+        }
+        const auth = options.auth;
+        if (auth.jwt_secret && auth.handler) {
+          const jwtAuth = require('socketio-jwt-auth').default;
+          io.use(
+            jwtAuth.authenticate({ secret: auth.jwt_secret, algorithm: 'HS256' }, auth.handler),
+          );
+        }
+        io.on('connection', options.socket.listener);
+      }
+
     })
     .catch(console.warn);
 };
