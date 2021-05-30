@@ -1410,6 +1410,13 @@
     "@types/mime" "^1"
     "@types/node" "*"
 
+"@types/socket.io@^3.0.2":
+  "integrity" "sha512-pu0sN9m5VjCxBZVK8hW37ZcMe8rjn4HHggBN5CbaRTvFwv5jOmuIRZEuddsBPa9Th0ts0SIo3Niukq+95cMBbQ=="
+  "resolved" "https://registry.npmjs.org/@types/socket.io/-/socket.io-3.0.2.tgz"
+  "version" "3.0.2"
+  dependencies:
+    "socket.io" "*"
+
 "@types/stack-utils@^1.0.1":
   "integrity" "sha512-l42BggppR6zLmpfU6fq9HEa2oGPEI8yrSPL3GITjfRInppYFahObbIQOQK3UGxEnyQpltZLaPe75046NOZQikw=="
   "resolved" "https://registry.npmjs.org/@types/stack-utils/-/stack-utils-1.0.1.tgz"
@@ -7457,7 +7464,7 @@
     "debug" "~4.1.0"
     "isarray" "2.0.1"
 
-"socket.io@^2.4.1":
+"socket.io@*", "socket.io@^2.4.1":
   "integrity" "sha512-Si18v0mMXGAqLqCVpTxBa8MGqriHGQh8ccEOhmsmNS3thNCGBwO8WGrwMibANsWtQQ5NStdZwHqZR3naJVFc3w=="
   "resolved" "https://registry.npmjs.org/socket.io/-/socket.io-2.4.1.tgz"
   "version" "2.4.1"

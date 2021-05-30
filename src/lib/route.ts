@@ -265,7 +265,8 @@ export const installRoutes = async (options: AuthOption) => {
       'jwt',
       new JwtStrategy(jwt_config, async (jwtPayload, done) => {
         try {
-          done(null, await options.handler?.(jwtPayload));
+          const handler = options.handler();
+          done(null, await handler?.(jwtPayload));
         } catch (e) {
           done(e);
         }

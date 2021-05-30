@@ -26,18 +26,18 @@ export interface ServerOption {
   auth: AuthOption;
   database: DatabaseOption;
   swagger: SwaggerOption;
-  socket?: SocketOption
+  socket?: SocketOption;
 }
 
 export interface AuthOption {
   jwt_secret: string;
   jwt_expiration: number;
-  handler: AsyncFunction<string, any>;
+  handler: () => AsyncFunction<string, any>;
 }
 
 export interface SocketOption {
   adapter?: unknown;
-  listener?: (socket:unknown) => void;
+  listener?: (socket: unknown) => void;
 }
 
 export interface SwaggerOption {

@@ -8,6 +8,7 @@ import { ServerOption } from './types';
 import { dbAssociate, dbInit } from './lib/database';
 import swaggerHandler from './lib/swagger';
 import { installRoutes } from './lib/route';
+import { socketInit } from './lib/socket';
 
 export const run = (dirname: string, options: ServerOption) => {
   const loadPath = async (path: string, subPath: string) => {
@@ -95,26 +96,14 @@ export const run = (dirname: string, options: ServerOption) => {
   initServer()
     .then(({ app }) => {
       const server = http.createServer(app);
+      if (options.socket) {
+        socketInit(server, options.socket, options.auth);
+      }
+
       const port = options.port || 3100;
       server.listen(port, () => {
         console.log(`Server is running on ${port} port.  http://localhost:${port}`);
       });
-
-      if (options.socket) {
-        const io = require('socket.io')(server);
-        if (options.socket.adapter) {
-          io.adapter(options.socket.adapter);
-        }
-        const auth = options.auth;
-        if (auth.jwt_secret && auth.handler) {
-          const jwtAuth = require('socketio-jwt-auth').default;
-          io.use(
-            jwtAuth.authenticate({ secret: auth.jwt_secret, algorithm: 'HS256' }, auth.handler),
-          );
-        }
-        io.on('connection', options.socket.listener);
-      }
-
     })
     .catch(console.warn);
 };
