@@ -33,6 +33,24 @@ export interface TypeIsDefine {
   required?: boolean;
 }
 
+export const parseToSwagger = (v: RequestParam | undefined) => {
+  if (!v) return undefined;
+  return Object.keys(v).reduce((x: { [key: string]: unknown }, y) => {
+    let type = v[y].type;
+    if ('function' === typeof type) type = type();
+
+    if ('__dto_name' in type) {
+      x[y] = {
+        type: 'items',
+        properties: parseToSwagger(type.properties),
+      };
+    } else {
+      x[y] = type.toSwagger();
+    }
+    return x;
+  }, {});
+};
+
 export const TypeArray = (o: DataType): (() => TypeIsObject) => {
   return (...x: any) => {
     const tp = parseType(o, x);
@@ -40,7 +58,12 @@ export const TypeArray = (o: DataType): (() => TypeIsObject) => {
       __name: 'array',
       toSwagger: () => ({
         type: 'array',
-        items: tp.isDto ? tp.dto?.properties : tp.typeIs?.toSwagger(),
+        items: tp.isDto
+          ? {
+              type: 'object',
+              properties: parseToSwagger(tp.dto?.properties),
+            }
+          : tp.typeIs?.toSwagger(),
       }),
       toSequelize: () => DataTypes.JSON,
     };

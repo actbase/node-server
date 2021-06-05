@@ -34,6 +34,7 @@ interface ModelPreference extends TypeIsDefine {
   validate?: ModelValidateOptions;
 
   connectTo?: ModelCtor<Model>;
+  reverseDefine?: boolean;
 }
 
 interface ModelExtraOptions extends ModelOptions {
@@ -68,7 +69,12 @@ export const createModel = (
     const connectModel = column.connectTo;
     if (connectModel) {
       associates.push(async (o?: ModelCtor<Model>) => {
-        await o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}`, onDelete: 'CASCADE' });
+        if (o) {
+          await o?.belongsTo(connectModel, { foreignKey: key, as: `__${key}`, onDelete: 'CASCADE' });
+          if (column.reverseDefine) {
+            await connectModel?.hasMany(o);
+          }
+        }
       });
       column.connectTo = undefined;
     }

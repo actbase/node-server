@@ -18,6 +18,7 @@ export interface VOProperties {
 
   query?: ((args: { user?: any; association: string }) => string) | string;
   column?: string;
+  render?: (data: unknown) => unknown;
 }
 
 interface ConfigSpec {
@@ -82,6 +83,11 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
       } else {
         p[key] = o?.[key];
       }
+
+      if (property.render) {
+        p[key] = property.render(p[key]);
+      }
+
       return p;
     }, {});
   };
