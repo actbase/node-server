@@ -118,6 +118,23 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           delete args.user;
 
           if (isPaging) {
+            console.log(
+              'middle',
+              target?.middleware(
+                {
+                  ...args,
+                  limit: page.limit,
+                  offset: page.page * page.limit,
+                  order: args.order || [[page.sort, page.dir]],
+                },
+                user,
+              ) || {
+                ...args,
+                limit: page.limit,
+                offset: page.page * page.limit,
+                order: args.order || [[page.sort, page.dir]],
+              },
+            );
             const output = await model.findAndCountAll(
               target?.middleware(
                 {

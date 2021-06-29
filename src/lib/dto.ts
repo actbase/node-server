@@ -112,7 +112,11 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
         const property = properties[y];
         if (property) {
           if (property.query) {
-            const association = options?.association || entity?.defineModel?.tableName || name;
+            const association =
+              (options?.full_associations ? `"${options?.full_associations}"` : options?.full_associations) ||
+              options?.association ||
+              entity?.defineModel?.tableName ||
+              name;
             const query = 'function' === typeof property.query ? property.query({ user, association }) : property.query;
             x.push([literal(query), y]);
             return x;
@@ -121,9 +125,16 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
           const tp = parseType(property.type);
           if (tp.isDto) {
             if (!options.include) options.include = [];
+            const assos = [options?.association, `__${property?.reference || y}`].filter(v => !!v);
+
             options.include.push(
               tp.dto?.middleware(
-                { model: tp.dto?.defineModel, association: `__${property?.reference || y}`, as: y },
+                {
+                  model: tp.dto?.defineModel,
+                  association: `__${property?.reference || y}`,
+                  full_associations: assos.join('->'),
+                  as: y,
+                },
                 user,
               ),
             );
