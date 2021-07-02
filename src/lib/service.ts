@@ -118,33 +118,18 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           delete args.user;
 
           if (isPaging) {
-            console.log(
-              'middle',
-              target?.middleware(
-                {
-                  ...args,
-                  limit: page.limit,
-                  offset: page.page * page.limit,
-                  order: args.order || [[page.sort, page.dir]],
-                },
-                user,
-              ) || {
+            const options = target?.middleware(
+              {
                 ...args,
                 limit: page.limit,
                 offset: page.page * page.limit,
                 order: args.order || [[page.sort, page.dir]],
               },
+              user,
             );
+
             const output = await model.findAndCountAll(
-              target?.middleware(
-                {
-                  ...args,
-                  limit: page.limit,
-                  offset: page.page * page.limit,
-                  order: args.order || [[page.sort, page.dir]],
-                },
-                user,
-              ) || {
+              options || {
                 ...args,
                 limit: page.limit,
                 offset: page.page * page.limit,
@@ -153,15 +138,16 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             );
             return pagingResponseParse(page, output, target?.map || (o => o));
           } else {
-            const output = await model.findAll(
-              target?.middleware(
-                {
-                  ...args,
-                  order: args.order || [['created_at', 'desc']],
-                },
-                user,
-              ),
+            const options = target?.middleware(
+              {
+                ...args,
+                limit: page.limit,
+                offset: page.page * page.limit,
+                order: args.order || [[page.sort, page.dir]],
+              },
+              user,
             );
+            const output = await model.findAll(options);
             return target?.collect(output);
           }
         },

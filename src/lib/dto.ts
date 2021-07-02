@@ -125,14 +125,23 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
           const tp = parseType(property.type);
           if (tp.isDto) {
             if (!options.include) options.include = [];
-            const assos = [options?.association, `__${property?.reference || y}`].filter(v => !!v);
+            const association = `__${property?.reference || y}`;
+            const associations = [options?.association, association].filter(v => !!v);
+
+            let where = undefined;
+            if (options?.where?.[association]) {
+              where = { ...options?.where?.[association] };
+              delete options?.where?.[association];
+            }
 
             options.include.push(
               tp.dto?.middleware(
                 {
                   model: tp.dto?.defineModel,
-                  association: `__${property?.reference || y}`,
-                  full_associations: assos.join('->'),
+                  where,
+                  required: !!(options?.required || (where && Object.keys(where).length > 0 && tp.dto?.defineModel)),
+                  association: association,
+                  full_associations: associations.join('->'),
                   as: y,
                 },
                 user,
@@ -147,6 +156,7 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
 
       if (!options.attributes) options.attributes = [];
       options.attributes = options.attributes.concat(attrs.filter(v => typeof v === 'object' || ATTRS.includes(v)));
+
       return options;
     },
   };

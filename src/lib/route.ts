@@ -333,7 +333,6 @@ export const installRoutes = async (options: AuthOption) => {
           for (const key of Object.keys(req?.query)) {
             const field = (<RequestParam>queryFields)?.[key];
             const tp = parseType(field?.type);
-            console.log('>>', key, field, tp);
             if (tp.isDto) {
               args.query[key] = tp.dto?.map(req.query?.[key]);
             } else if (tp.typeIs) {
