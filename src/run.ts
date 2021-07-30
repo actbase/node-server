@@ -103,6 +103,7 @@ export const run = (dirname: string, options: ServerOption) => {
       const port = options.port || 3100;
       server.listen(port, () => {
         console.log(`Server is running on ${port} port.  http://localhost:${port}`);
+        options?.listener?.();
       });
     })
     .catch(console.warn);

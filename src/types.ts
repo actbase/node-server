@@ -27,6 +27,7 @@ export interface ServerOption {
   database: DatabaseOption;
   swagger: SwaggerOption;
   socket?: SocketOption;
+  listener?: () => void;
 }
 
 export interface AuthOption {

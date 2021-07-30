@@ -141,9 +141,8 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             const options = target?.middleware(
               {
                 ...args,
-                limit: page.limit,
-                offset: page.page * page.limit,
-                order: args.order || [[page.sort, page.dir]],
+                limit: args.limit,
+                order: args.order || [model.primaryKeyAttributes?.map(attr => [attr, 'desc'])],
               },
               user,
             );
