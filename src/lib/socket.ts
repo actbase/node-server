@@ -83,7 +83,7 @@ export const socketInit = (server: Server, options: SocketOption, authOption?: A
 
     config.listeners.map((item: any) => {
       const r = item.request.roles?.filter((v: string) => user?.roles?.includes(v));
-      if (r.length > 0) {
+      if (r?.length > 0 || item.request.roles === undefined) {
         socket.on(item.request.path, async (body: any) => {
           await item.execute(socket, { body, user });
         });

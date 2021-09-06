@@ -1,6 +1,6 @@
 {
   "name": "@actbase/node-server",
-  "version": "1.0.47",
+  "version": "1.0.48",
   "description": "Node Server Framework",
   "main": "lib/index.js",
   "module": "lib/index.js",
