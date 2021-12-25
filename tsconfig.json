@@ -14,7 +14,6 @@
       "esnext"
     ],
     "allowJs": true,
-    "jsx": "react-native",
     "preserveConstEnums": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,

@@ -136,11 +136,12 @@ export const dbInit = (options?: DatabaseOption) => {
   if (!options) return undefined;
   const args: Options = {
     host: options.host,
+    port: options.port,
     dialect: options.dialect,
     logging: options?.debug ? console.log : false,
     timezone: '+09:00',
     pool: {
-      max: 20,
+      max: 5,
       idle: 4800,
       acquire: 60000,
     },

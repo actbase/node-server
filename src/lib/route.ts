@@ -336,7 +336,6 @@ export const installRoutes = async (options: AuthOption) => {
             if (tp.isDto) {
               args.query[key] = tp.dto?.map(req.query?.[key]);
             } else if (tp.typeIs) {
-              console.log(req.query?.[key]);
               args.query[key] = (tp.typeIs?.fixValue && tp.typeIs.fixValue(req.query?.[key])) || req.query?.[key];
             } else if (['page', 'limit', 'sort', 'dir'].includes(key)) {
               args.query[key] = req.query?.[key];

@@ -72,7 +72,6 @@ export const socketInit = (server: Server, options: SocketOption, authOption?: A
   io.on('connection', (socket: any) => {
     const user: AppUser = <AppUser>socket.request.user;
     if (authOption) {
-      console.log('Authentication passed!', user?.id);
       // now you can access user info through socket.request.user
       // socket.request.user.logged_in will be set to true if the user was authenticated
       socket.emit('success', {
