@@ -41,6 +41,7 @@ export interface RouteOption {
 }
 
 interface ExecuteArgs {
+  request: unknown;
   path?: { [key: string]: unknown };
   query: { [key: string]: unknown };
   body: { [key: string]: unknown };
@@ -322,6 +323,7 @@ export const installRoutes = async (options: AuthOption) => {
             user.roles = JSON.parse(user.roles);
           }
           const args: ExecuteArgs = {
+            request: req,
             files: req.files,
             query: {},
             path: req.params,
