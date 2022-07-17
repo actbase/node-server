@@ -4273,10 +4273,10 @@
   "resolved" "https://registry.npmjs.org/indexof/-/indexof-0.0.1.tgz"
   "version" "0.0.1"
 
-"inflection@1.13.1":
-  "integrity" "sha512-dldYtl2WlN0QDkIDtg8+xFwOS2Tbmp12t1cHa5/YClU6ZQjTFm7B66UcVbh9NQB+HvT5BAd2t5+yKsBkw5pcqA=="
-  "resolved" "https://registry.npmjs.org/inflection/-/inflection-1.13.1.tgz"
-  "version" "1.13.1"
+"inflection@1.12.0":
+  "integrity" "sha1-ogCTVlbW9fa8TcdQLhrstwMihBY="
+  "resolved" "https://registry.npmjs.org/inflection/-/inflection-1.12.0.tgz"
+  "version" "1.12.0"
 
 "inflight@^1.0.4":
   "integrity" "sha1-Sb1jMdfQLQwJvJEKEHW6gWW1bfk="
@@ -7244,14 +7244,14 @@
   "resolved" "https://registry.npmjs.org/sequelize-pool/-/sequelize-pool-6.1.0.tgz"
   "version" "6.1.0"
 
-"sequelize@^6.6.4":
-  "integrity" "sha512-SOSu3tclOjHJfvuIITUlAsh2Q642gFxjpNN+IM1quFZ7jU5Pep7FIAwBK8UWgTpNc9TK9rUr1cyLB/G25CGicA=="
-  "resolved" "https://registry.npmjs.org/sequelize/-/sequelize-6.6.4.tgz"
-  "version" "6.6.4"
+"sequelize@6.5.1":
+  "integrity" "sha512-DWgaF+Vw+gWpxomyyYppUOCWzP0ReoMol8EEaDMA+cbSUevyMb74BEwSAd0c8GKgDYiOjpq4DmKBQLHtLAgS1g=="
+  "resolved" "https://registry.npmjs.org/sequelize/-/sequelize-6.5.1.tgz"
+  "version" "6.5.1"
   dependencies:
     "debug" "^4.1.1"
     "dottie" "^2.0.0"
-    "inflection" "1.13.1"
+    "inflection" "1.12.0"
     "lodash" "^4.17.20"
     "moment" "^2.26.0"
     "moment-timezone" "^0.5.31"

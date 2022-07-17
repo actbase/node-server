@@ -19,6 +19,10 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption, prefix?: s
   swagger.info.version = options.version;
   swagger.info.description = options.description;
 
+  if (options.auth) {
+    swagger.components.securitySchemes.OAuthLogin.flows.password.tokenUrl = options.auth;
+  }
+
   const pages = getPages();
   pages.sort((a: SwaggerData, b: SwaggerData) => {
     const ix1 = methods.indexOf(a.method.toLowerCase());

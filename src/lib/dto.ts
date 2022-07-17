@@ -16,7 +16,7 @@ export interface VOProperties {
   defaultValue?: unknown;
   reference?: string;
 
-  query?: ((args: { user?: any; association: string }) => string) | string;
+  query?: ((args: { user?: any; association: string; exportParams?: { [key: string]: unknown} }) => string) | string;
   column?: string;
   render?: (data: unknown) => unknown;
 }
@@ -117,7 +117,7 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
               options?.association ||
               entity?.defineModel?.tableName ||
               name;
-            const query = 'function' === typeof property.query ? property.query({ user, association }) : property.query;
+            const query = 'function' === typeof property.query ? property.query({ user, association, exportParams: options.exportParams }) : property.query;
             x.push([literal(query), y]);
             return x;
           }

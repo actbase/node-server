@@ -69,6 +69,7 @@ export const pagingResponseParse = (
 export interface GetObjectArgs extends FindAndCountOptions {
   pagable?: any;
   exportTo?: ValueObject;
+  exportParams?: { [key: string]: unknown };
   user?: any;
 }
 

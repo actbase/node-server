@@ -47,6 +47,7 @@ export interface SwaggerOption {
   description: string;
   scheme: 'http' | 'https';
   host: string;
+  auth?: string;
 }
 
 export interface DatabaseOption {
