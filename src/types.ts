@@ -24,6 +24,7 @@ export interface ServerOption {
   port: number;
   prefix?: string;
   auth: AuthOption;
+  rawUris?: string[];
   database: DatabaseOption;
   swagger: SwaggerOption;
   socket?: SocketOption;

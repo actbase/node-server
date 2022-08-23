@@ -38,7 +38,13 @@ export const run = (dirname: string, options: ServerOption) => {
         credentials: true,
       }),
     );
-    app.use(express.json({ limit: '500mb' }));
+    app.use((req, res, next) => {
+      if (options.rawUris?.includes(req.originalUrl)) {
+        express.raw({type: 'application/json'})(req, res, next);
+      } else {
+        express.json({ limit: '500mb' })(req, res, next);
+      }
+    });
     app.use(express.urlencoded({ limit: '500mb', extended: false }));
     app.use(
       passport.initialize({

@@ -113,7 +113,7 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
         if (property) {
           if (property.query) {
             const association =
-              (options?.full_associations ? `"${options?.full_associations}"` : options?.full_associations) ||
+              (options?.full_associations ? "`" + options?.full_associations + "`" : options?.full_associations) ||
               options?.association ||
               entity?.defineModel?.tableName ||
               name;
