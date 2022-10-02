@@ -139,15 +139,24 @@ export const dbInit = (options?: DatabaseOption) => {
     port: options.port,
     dialect: options.dialect,
     logging: options?.debug ? console.log : false,
-    timezone: '+09:00',
+    timezone: options?.timezone ?? '+09:00',
+    replication: options?.replication,
     pool: {
-      max: 5,
-      idle: 4800,
+      min: 1,
+      max: 20,
+      idle: 10000,
       acquire: 60000,
     },
+    retry: {
+      max: 3
+    }
   };
+  if (!options?.replication) {
+    delete args?.replication;
+  }
+
   config.container = new Sequelize(options.scheme, options.username, options.password, args);
-  console.log('@node :: database initalize.');
+  console.log('@node :: database initalize.', args);
   return config.container;
 };
 

@@ -1,6 +1,7 @@
 // @ts-ignore
 import { DataType, TypeIsObject, ValueObjectDefault } from './contants/TypeIs';
 import { ValueObject } from './lib/dto';
+import { ReplicationOptions } from 'sequelize/types/lib/sequelize';
 
 export type AsyncFunction<A, O> = (args: A) => Promise<O>;
 
@@ -54,11 +55,13 @@ export interface SwaggerOption {
 export interface DatabaseOption {
   debug?: boolean;
   dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql';
-  host: string;
+  host?: string;
   port: number;
   scheme: string;
   username: string;
-  password: string;
+  password?: string;
+  replication?: ReplicationOptions;
+  timezone?: string;
 }
 
 export interface ControllerOption {
