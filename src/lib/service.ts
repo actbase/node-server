@@ -137,7 +137,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
               ),
           );
           for (const field of fields ?? []) {
-            if (!output.getDataValue(field)?.startsWith('${AES}')) continue;
+            if (!output?.getDataValue(field)?.startsWith('${AES}')) continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
           }
           return output;
@@ -231,7 +231,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           }
           const output = await model.create(args2, { transaction });
           for (const field of fields ?? []) {
-            if (!output.getDataValue(field)?.startsWith('${AES}')) continue;
+            if (!output?.getDataValue(field)?.startsWith('${AES}')) continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
           }
           return output;
@@ -244,7 +244,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           }
           const output = await model.save({ transaction });
           for (const field of fields ?? []) {
-            if (!output.getDataValue(field)?.startsWith('${AES}')) continue;
+            if (!output?.getDataValue(field)?.startsWith('${AES}')) continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
           }
           return output;
