@@ -109,7 +109,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           let result = output;
           for (const field of fields ?? []) {
             result = result?.map(row => {
-              if (row.getDataValue(field)?.startsWith('${AES}')) {
+              if (row?.getDataValue(field)?.startsWith('${AES}')) {
                 row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
               }
               return row;
