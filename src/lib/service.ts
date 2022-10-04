@@ -4,7 +4,7 @@ import { ValueObject } from './dto';
 import { Transaction } from 'sequelize';
 import CryptoJS from 'crypto-js';
 
-function encodeAES128(str: string, key: string) {
+export function encodeAES128(str: string, key: string) {
   const cipher = CryptoJS.AES.encrypt(str, CryptoJS.enc.Utf8.parse(key), {
     iv: CryptoJS.enc.Utf8.parse(''), // [Enter IV (Optional) 지정 방식]
     padding: CryptoJS.pad.Pkcs7,
@@ -13,7 +13,7 @@ function encodeAES128(str: string, key: string) {
   return cipher.toString();
 }
 
-function decodeAES128(str: string, key: string) {
+export function decodeAES128(str: string, key: string) {
   const input = str.startsWith('${AES}') ? str.substring(6) : str;
   const cipher = CryptoJS.AES.decrypt(input, CryptoJS.enc.Utf8.parse(key), {
     iv: CryptoJS.enc.Utf8.parse(''), // [Enter IV (Optional) 지정 방식]
