@@ -17,10 +17,16 @@ interface ConfigSpec {
     domain?: ModelCtor<Model>;
     associate: (domain: ModelCtor<Model> | undefined) => Promise<void> | void;
   }[];
+  secures: {
+    domain?: string;
+    fields?: string[];
+  }[];
+  secureKey?: string;
 }
 
 const config: ConfigSpec = {
   associates: [],
+  secures: [],
 };
 
 interface ModelPreference extends TypeIsDefine {
@@ -35,6 +41,7 @@ interface ModelPreference extends TypeIsDefine {
 
   connectTo?: ModelCtor<Model>;
   reverseDefine?: boolean;
+  secure?: boolean;
 }
 
 interface ModelExtraOptions extends ModelOptions {
@@ -42,7 +49,8 @@ interface ModelExtraOptions extends ModelOptions {
   associate?: () => void;
 }
 
-export interface DBModel extends ModelCtor<Model> {}
+export interface DBModel extends ModelCtor<Model> {
+}
 
 export const createModel = (
   name: string,
@@ -113,6 +121,16 @@ export const createModel = (
     tableName: name,
   });
 
+  if (domain) {
+    const fields = Object.keys(columns).filter(v => columns[v].secure);
+    if (fields.length) {
+      config.secures.push({
+        domain: name,
+        fields,
+      });
+    }
+  }
+
   if (associates?.length > 0) {
     config.associates?.push(
       ...associates?.map(v => ({
@@ -148,13 +166,14 @@ export const dbInit = (options?: DatabaseOption) => {
       acquire: 60000,
     },
     retry: {
-      max: 3
-    }
+      max: 3,
+    },
   };
   if (!options?.replication) {
     delete args?.replication;
   }
 
+  config.secureKey = options.securekey;
   config.container = new Sequelize(options.scheme, options.username, options.password, args);
   console.log('@node :: database initalize.', args);
   return config.container;
@@ -174,4 +193,14 @@ export const dbAssociate = async () => {
 
 export const getSequelize = (): Sequelize | undefined => {
   return config.container;
+};
+
+export const getSecureFields = (model?: string): string[] | undefined => {
+  const o = config.secures.find(v => v.domain === model);
+  return o?.fields;
+};
+
+export const getSecureKey = () => {
+  const s = (config.secureKey ?? 'actbase@node-server') + '****************';
+  return s.substring(0, 16);
 };

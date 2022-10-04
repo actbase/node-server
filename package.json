@@ -1,6 +1,6 @@
 {
   "name": "@actbase/node-server",
-  "version": "1.0.62",
+  "version": "1.1.0",
   "description": "Node Server Framework",
   "main": "lib/index.js",
   "module": "lib/index.js",
@@ -13,7 +13,7 @@
     "build:src": "rm -rf ./lib && tsc -p src/tsconfig.json && babel lib --out-dir lib",
     "build": "npm run build:src",
     "prepublish": "npm run build",
-    "localinstall": "npm run build && cp -r ./lib /Users/suhanmoon/Projects/pangaia-v2/spvrkd-ms-attachments/node_modules/@actbase/node-server/"
+    "localinstall": "npm run build && cp -r ./lib /Users/suhanmoon/Projects/pangaia-v2/spvrkd-ms-users/node_modules/@actbase/node-server/"
   },
   "license": "MIT",
   "keywords": [

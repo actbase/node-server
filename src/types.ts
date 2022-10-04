@@ -62,6 +62,7 @@ export interface DatabaseOption {
   password?: string;
   replication?: ReplicationOptions;
   timezone?: string;
+  securekey?: string;
 }
 
 export interface ControllerOption {
