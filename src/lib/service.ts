@@ -110,7 +110,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           for (const field of fields ?? []) {
             result = result?.map(row => {
               if (row?.getDataValue(field)?.startsWith?.('${AES}')) {
-                row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                row.setDataValue(field, decodeAES128(JSON.stringify(row.getDataValue(field)), getSecureKey()));
               }
               return row;
             });
@@ -138,7 +138,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           );
           for (const field of fields ?? []) {
             if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
-            output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
+            output.setDataValue(field, decodeAES128(JSON.stringify(output.getDataValue(field)), getSecureKey()));
           }
           return output;
         },
@@ -148,7 +148,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           for (const field of fields ?? []) {
             output.rows = output.rows?.map(row => {
               if (row.getDataValue(field)?.startsWith?.('${AES}')) {
-                row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                row.setDataValue(field, decodeAES128(JSON.stringify(row.getDataValue(field)), getSecureKey()));
               }
               return row;
             });
@@ -189,7 +189,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             for (const field of fields ?? []) {
               output.rows = output.rows?.map(row => {
                 if (row.getDataValue(field)?.startsWith?.('${AES}')) {
-                  row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                  row.setDataValue(field, decodeAES128(JSON.stringify(row.getDataValue(field)), getSecureKey()));
                 }
                 return row;
               });
@@ -209,7 +209,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             for (const field of fields ?? []) {
               output = output?.map(row => {
                 if (row.getDataValue(field)?.startsWith?.('${AES}')) {
-                  row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                  row.setDataValue(field, decodeAES128(JSON.stringify(row.getDataValue(field)), getSecureKey()));
                 }
                 return row;
               });
@@ -232,7 +232,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           const output = await model.create(args2, { transaction });
           for (const field of fields ?? []) {
             if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
-            output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
+            output.setDataValue(field, decodeAES128(JSON.stringify(output.getDataValue(field)), getSecureKey()));
           }
           return output;
         },
@@ -245,7 +245,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           const output = await model.save({ transaction });
           for (const field of fields ?? []) {
             if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
-            output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
+            output.setDataValue(field, decodeAES128(JSON.stringify(output.getDataValue(field)), getSecureKey()));
           }
           return output;
         },
