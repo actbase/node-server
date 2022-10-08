@@ -20,7 +20,11 @@ export function decodeAES128(str: string, key: string) {
     padding: CryptoJS.pad.Pkcs7,
     mode: CryptoJS.mode.CBC, // [cbc 모드 선택]
   });
-  return cipher.toString(CryptoJS.enc.Utf8);
+  try {
+    return cipher.toString(CryptoJS.enc.Utf8);
+  } catch (error) {
+    return null;
+  }
 }
 
 export type RepoFn = {
