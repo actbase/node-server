@@ -2,6 +2,8 @@ import { FindAndCountOptions, Model, ModelCtor } from 'sequelize/types/lib/model
 import { DataType, TypeIsDefine, ValueObjectDefault } from '../contants/TypeIs';
 import { literal } from 'sequelize';
 import { parseType } from '../types';
+import { decodeAES128 } from './service';
+import { getSecureKey } from './database';
 
 export interface ValueObject extends ValueObjectDefault {
   defineModel?: ModelCtor<any>;
@@ -16,9 +18,11 @@ export interface VOProperties {
   defaultValue?: unknown;
   reference?: string;
 
-  query?: ((args: { user?: any; association: string; exportParams?: { [key: string]: unknown} }) => string) | string;
+  query?: ((args: { user?: any; association: string; exportParams?: { [key: string]: unknown } }) => string) | string;
   column?: string;
   render?: (data: unknown) => unknown;
+
+  secure?: Boolean;
 }
 
 interface ConfigSpec {
@@ -88,6 +92,10 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
         p[key] = property.render(p[key]);
       }
 
+      if (property.secure) {
+        p[key] = decodeAES128(JSON.stringify(p[key]), getSecureKey());
+      }
+
       return p;
     }, {});
   };
@@ -113,11 +121,14 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
         if (property) {
           if (property.query) {
             const association =
-              (options?.full_associations ? "`" + options?.full_associations + "`" : options?.full_associations) ||
+              (options?.full_associations ? '`' + options?.full_associations + '`' : options?.full_associations) ||
               options?.association ||
               entity?.defineModel?.tableName ||
               name;
-            const query = 'function' === typeof property.query ? property.query({ user, association, exportParams: options.exportParams }) : property.query;
+            const query =
+              'function' === typeof property.query
+                ? property.query({ user, association, exportParams: options.exportParams })
+                : property.query;
             x.push([literal(query), y]);
             return x;
           }
