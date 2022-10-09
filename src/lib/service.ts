@@ -23,7 +23,7 @@ export function decodeAES128(str: string, key: string) {
   try {
     return cipher.toString(CryptoJS.enc.Utf8);
   } catch (error) {
-    return null;
+    return str;
   }
 }
 
