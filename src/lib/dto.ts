@@ -92,8 +92,8 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
         p[key] = property.render(p[key]);
       }
 
-      if (property.secure) {
-        p[key] = decodeAES128(JSON.stringify(p[key]), getSecureKey());
+      if (property.secure && typeof p[key] === 'string') {
+        p[key] = decodeAES128(<string>p[key], getSecureKey());
       }
 
       return p;
