@@ -115,6 +115,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             result = result?.map(row => {
               if (row?.getDataValue(field)?.startsWith?.('${AES}')) {
                 row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                // @ts-ignore
+                if (model.rawAttributes[field].type.key === 'JSON') {
+                  try {
+                    row.setDataValue(field, JSON.parse(row.getDataValue(field)));
+                  } catch (error) {}
+                }
               }
               return row;
             });
@@ -143,6 +149,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           for (const field of fields ?? []) {
             if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
+            // @ts-ignore
+            if (model.rawAttributes[field].type.key === 'JSON') {
+              try {
+                output.setDataValue(field, JSON.parse(output.getDataValue(field)));
+              } catch (error) {}
+            }
           }
           return output;
         },
@@ -153,6 +165,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             output.rows = output.rows?.map(row => {
               if (row.getDataValue(field)?.startsWith?.('${AES}')) {
                 row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                // @ts-ignore
+                if (model.rawAttributes[field].type.key === 'JSON') {
+                  try {
+                    row.setDataValue(field, JSON.parse(row.getDataValue(field)));
+                  } catch (error) {}
+                }
               }
               return row;
             });
@@ -194,6 +212,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
               output.rows = output.rows?.map(row => {
                 if (row.getDataValue(field)?.startsWith?.('${AES}')) {
                   row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                  // @ts-ignore
+                  if (model.rawAttributes[field].type.key === 'JSON') {
+                    try {
+                      row.setDataValue(field, JSON.parse(row.getDataValue(field)));
+                    } catch (error) {}
+                  }
                 }
                 return row;
               });
@@ -211,9 +235,16 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
             );
             let output = await model.findAll(options);
             for (const field of fields ?? []) {
+              // @ts-ignore
               output = output?.map(row => {
                 if (row.getDataValue(field)?.startsWith?.('${AES}')) {
                   row.setDataValue(field, decodeAES128(row.getDataValue(field), getSecureKey()));
+                  // @ts-ignore
+                  if (model.rawAttributes[field].type.key === 'JSON') {
+                    try {
+                      row.setDataValue(field, JSON.parse(row.getDataValue(field)));
+                    } catch (error) {}
+                  }
                 }
                 return row;
               });
@@ -231,12 +262,23 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
 
           for (const field of fields ?? []) {
             if (args2[field]?.startsWith?.('${AES}')) continue;
-            args2[field] = '${AES}' + encodeAES128(args2[field], getSecureKey());
+            // @ts-ignore
+            if (model.rawAttributes[field].type.key === 'JSON') {
+              args2[field] = '${AES}' + encodeAES128(JSON.stringify(args2[field]), getSecureKey());
+            } else {
+              args2[field] = '${AES}' + encodeAES128(args2[field], getSecureKey());
+            }
           }
           const output = await model.create(args2, { transaction });
           for (const field of fields ?? []) {
             if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
+            // @ts-ignore
+            if (model.rawAttributes[field].type.key === 'JSON') {
+              try {
+                output.setDataValue(field, JSON.parse(output.getDataValue(field)));
+              } catch (error) {}
+            }
           }
           return output;
         },
@@ -244,12 +286,26 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           const fields = getSecureFields(model.constructor.name);
           for (const field of fields ?? []) {
             if (model.getDataValue(field)?.startsWith?.('${AES}')) continue;
-            model.setDataValue(field, '${AES}' + encodeAES128(model.getDataValue(field), getSecureKey()));
+            // @ts-ignore
+            if (model.rawAttributes[field].type.key === 'JSON') {
+              model.setDataValue(
+                field,
+                '${AES}' + encodeAES128(JSON.stringify(model.getDataValue(field)), getSecureKey()),
+              );
+            } else {
+              model.setDataValue(field, '${AES}' + encodeAES128(model.getDataValue(field), getSecureKey()));
+            }
           }
           const output = await model.save({ transaction });
           for (const field of fields ?? []) {
             if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
+            // @ts-ignore
+            if (model.rawAttributes[field].type.key === 'JSON') {
+              try {
+                output.setDataValue(field, JSON.parse(output.getDataValue(field)));
+              } catch (error) {}
+            }
           }
           return output;
         },
