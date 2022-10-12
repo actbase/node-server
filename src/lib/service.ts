@@ -261,7 +261,7 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           const args2 = { ...args };
 
           for (const field of fields ?? []) {
-            if (args2[field]?.startsWith?.('${AES}')) continue;
+            if (args2[field] === null || args2[field] === undefined || args2[field]?.startsWith?.('${AES}')) continue;
             // @ts-ignore
             if (model.rawAttributes[field].type.key === 'JSON') {
               args2[field] = '${AES}' + encodeAES128(JSON.stringify(args2[field]), getSecureKey());
@@ -271,7 +271,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           }
           const output = await model.create(args2, { transaction });
           for (const field of fields ?? []) {
-            if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
+            if (
+              output?.getDataValue(field) === null ||
+              output?.getDataValue(field) === undefined ||
+              !output?.getDataValue(field)?.startsWith?.('${AES}')
+            )
+              continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
             // @ts-ignore
             if (model.rawAttributes[field].type.key === 'JSON') {
@@ -285,7 +290,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
         save: async model => {
           const fields = getSecureFields(model.constructor.name);
           for (const field of fields ?? []) {
-            if (model.getDataValue(field)?.startsWith?.('${AES}')) continue;
+            if (
+              model.getDataValue === null ||
+              model.getDataValue === undefined ||
+              model.getDataValue(field)?.startsWith?.('${AES}')
+            )
+              continue;
             // @ts-ignore
             if (model.rawAttributes[field].type.key === 'JSON') {
               model.setDataValue(
@@ -298,7 +308,12 @@ const wrappingFunciton = function(fn: ServiceMethodItem): ExportMethodType {
           }
           const output = await model.save({ transaction });
           for (const field of fields ?? []) {
-            if (!output?.getDataValue(field)?.startsWith?.('${AES}')) continue;
+            if (
+              output?.getDataValue(field) === null ||
+              output?.getDataValue(field) === undefined ||
+              !output?.getDataValue(field)?.startsWith?.('${AES}')
+            )
+              continue;
             output.setDataValue(field, decodeAES128(output.getDataValue(field), getSecureKey()));
             // @ts-ignore
             if (model.rawAttributes[field].type.key === 'JSON') {
