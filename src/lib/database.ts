@@ -175,7 +175,7 @@ export const dbInit = (options?: DatabaseOption) => {
 
   config.secureKey = options.securekey;
   config.container = new Sequelize(options.scheme, options.username, options.password, args);
-  console.log('@node :: database initalize.', args);
+  // console.log('@node :: database initalize.', args);
   return config.container;
 };
 
