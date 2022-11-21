@@ -35,7 +35,8 @@ $ npm install @actbase/node-server
 
 ## 시작
 
-### Routing
+### Route
+#### 앤드포인트(URI)가 클라이언트 요청에 응답하는 방법을 나타내는 Route입니다.
 
 ```js
 import { createRoute } from '@actbase/node-server';
@@ -59,6 +60,7 @@ export default createRoute(
 ```
 
 ### Model
+#### Database Table 정보를 담고있는 Model 입니다.
 
 ```js
 import { createModel, TypeIs } from '@actbase/node-server';
@@ -78,6 +80,7 @@ export default User;
 ```
 
 ### DTO
+#### 데이터 객체 선언(Data Transfer Object) 파일입니다.
 
 ```js
 import { createDto } from '@actbase/node-server';
@@ -95,6 +98,7 @@ export default createDto(
 ```
 
 ### Service
+#### 비즈니스 로직을 담고있는 Service입니다.
 
 ```js
 import { createService } from '@actbase/node-server';
