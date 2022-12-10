@@ -3,7 +3,7 @@ import { DataType, TypeIsDefine, ValueObjectDefault } from '../contants/TypeIs';
 import { literal } from 'sequelize';
 import { parseType } from '../types';
 import { decodeAES128 } from './service';
-import { getSecureKey } from './database';
+import { getSecureKey, getSequelize } from './database';
 
 export interface ValueObject extends ValueObjectDefault {
   defineModel?: ModelCtor<any>;
@@ -118,10 +118,17 @@ export function createDto<T extends Model & { [key: string]: unknown }>(
     middleware: (options, user) => {
       let attrs = Object.keys(properties).reduce((x: (string | object)[], y) => {
         const property = properties[y];
+
+        const dbName= getSequelize()?.getDialect();
+        let wrapper = '`'
+        if(dbName==='postgres'){
+            wrapper = '"'
+        }
+
         if (property) {
           if (property.query) {
             const association =
-              (options?.full_associations ? '`' + options?.full_associations + '`' : options?.full_associations) ||
+              (options?.full_associations ? wrapper + options?.full_associations + wrapper : options?.full_associations) ||
               options?.association ||
               entity?.defineModel?.tableName ||
               name;
