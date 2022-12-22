@@ -86,6 +86,8 @@ const swaggerHandler = (app: express.Express, options: SwaggerOption, prefix?: s
       swaggerOptions: {
         url: `${options.scheme}://${options.host}/api-docs`,
         docExpansion: 'none',
+        defaultModelExpandsDepth:'100',
+        defaultModelExpandDepth:'100'
       },
     }),
   );
